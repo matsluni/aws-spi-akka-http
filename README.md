@@ -52,6 +52,8 @@ val client = S3AsyncClient
 val eventualResponse = client.listBuckets()
 ```
 
+There also exists an [mini example project](https://github.com/matsluni/aws-spi-akka-http-example) in gradle which shows the usage.
+
 ## Running the tests in this repo
 
 In this repository there are unit tests and integration tests. The unit tests run against some local started aws 
