@@ -1,0 +1,126 @@
+/*
+ * Copyright 2018 Matthias Lüneberg
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.github.matsluni.akkahttpspi
+
+import java.util.Optional
+import java.util.concurrent.TimeUnit
+
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.HttpEntity.Empty
+import akka.http.scaladsl.model.HttpHeader.ParsingResult
+import akka.http.scaladsl.model.HttpHeader.ParsingResult.Ok
+import akka.http.scaladsl.model.MediaType.Compressible
+import akka.http.scaladsl.model.RequestEntityAcceptance.Expected
+import akka.http.scaladsl.model._
+import akka.stream.scaladsl.Source
+import akka.stream.{ActorMaterializer, Materializer}
+import akka.util.ByteString
+import org.slf4j.LoggerFactory
+import software.amazon.awssdk.http.async.{AbortableRunnable, SdkAsyncHttpClient, SdkHttpRequestProvider, SdkHttpResponseHandler}
+import software.amazon.awssdk.http.{SdkHttpConfigurationOption, SdkHttpRequest, SdkRequestContext}
+import software.amazon.awssdk.utils.AttributeMap
+
+import scala.collection.JavaConverters._
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext}
+
+class AkkaHttpClient(shutdownHandle: () => Unit)(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) extends SdkAsyncHttpClient {
+
+  val logger = LoggerFactory.getLogger(this.getClass)
+
+  override def prepareRequest(request: SdkHttpRequest, context: SdkRequestContext, requestProvider: SdkHttpRequestProvider, handler: SdkHttpResponseHandler[_]): AbortableRunnable = {
+    new RunnableRequest(toAkkaRequest(request, requestProvider), handler)
+  }
+
+  override def close(): Unit = {
+    shutdownHandle()
+  }
+
+  override def getConfigurationValue[T](key: SdkHttpConfigurationOption[T]): Optional[T] = Optional.empty[T]
+
+  private def toAkkaRequest(request: SdkHttpRequest, requestProvider: SdkHttpRequestProvider): HttpRequest = {
+    val headers = convertHeaders(request.headers())
+    val method = convertMethod(request.method().name())
+    HttpRequest(
+     method = method,
+     uri = Uri(request.getUri.toString),
+     headers = filterContentTypeAndContentLengthHeader(headers),
+     entity = entityForMethodAndContentType(method, contentTypeHeaderToContentType(headers), requestProvider),
+     protocol = HttpProtocols.`HTTP/1.1`
+   )
+  }
+
+  private def entityForMethodAndContentType(method: HttpMethod, contentType: ContentType, requestProvider: SdkHttpRequestProvider): RequestEntity = {
+    method.requestEntityAcceptance match {
+      case Expected => HttpEntity(contentType, requestProvider.contentLength(), Source.fromPublisher(requestProvider).map(ByteString(_)))
+      case _ => HttpEntity.empty(Empty.contentType)
+    }
+  }
+
+  private def convertMethod(method: String) = method match {
+    case "PUT" => HttpMethods.PUT
+    case "POST" => HttpMethods.POST
+    case "GET" => HttpMethods.GET
+    case "DELETE" => HttpMethods.DELETE
+    case "HEAD" => HttpMethods.HEAD
+    case "OPTIONS" => HttpMethods.OPTIONS
+    case "PATCH" => HttpMethods.PATCH
+    case "CONNECT" => HttpMethods.CONNECT
+    case _ => throw new IllegalArgumentException(s"Method not configured: ${method}")
+  }
+
+  private def contentTypeHeaderToContentType(headers: List[HttpHeader]): ContentType = {
+    headers.find(_.lowercaseName() == "content-type").map(_.value()) match {
+      case Some("application/x-amz-json-1.0") => AkkaHttpClient.xAmzJson
+      case Some("application/x-amz-json-1.1") => AkkaHttpClient.xAmzJson11
+      case Some("application/x-www-form-urlencoded; charset=UTF-8") => AkkaHttpClient.formUrlEncoded
+      case Some("application/xml") => AkkaHttpClient.applicationXml
+      case Some(s) => tryCreateCustomContentType(s)
+      case None => AkkaHttpClient.formUrlEncoded
+    }
+  }
+
+  private def convertHeaders(headers: java.util.Map[String, java.util.List[String]]): List[HttpHeader] = {
+    headers.asScala.map { case (key, value) =>
+      if (value.size() > 1 || value.size() == 0) throw new IllegalArgumentException(s"found invalid header: key: $key, Value: ${value.asScala.toList}")
+      HttpHeader.parse(key, value.get(0)) match {
+        case ok:Ok => ok.header
+        case error:ParsingResult.Error => throw new IllegalArgumentException(s"found invalid header: ${error.errors}")
+      }
+    }.toList
+  }
+
+  private def filterContentTypeAndContentLengthHeader(headers: Seq[HttpHeader]): collection.immutable.Seq[HttpHeader] =
+    headers.filterNot(h => h.lowercaseName() == "content-type" || h.lowercaseName() == "content-length").toList
+
+  private def tryCreateCustomContentType(string: String): ContentType = {
+    logger.info(s"Try to content type from $string")
+    val mainAndsubType = string.split('/')
+    if (mainAndsubType.length == 2)
+      ContentType(MediaType.customBinary(mainAndsubType(1), mainAndsubType(2), Compressible))
+    else throw new RuntimeException("Could not parse custom media type")
+  }
+
+}
+
+object AkkaHttpClient {
+  lazy val xAmzJson = ContentType(MediaType.customBinary("application", "x-amz-json-1.0", Compressible))
+  lazy val xAmzJson11 = ContentType(MediaType.customBinary("application", "x-amz-json-1.1", Compressible))
+  lazy val formUrlEncoded = ContentType(MediaTypes.`application/x-www-form-urlencoded`, HttpCharset.custom("utf-8"))
+  lazy val applicationXml = ContentType(MediaType.customBinary("application", "xml", Compressible))
+}
