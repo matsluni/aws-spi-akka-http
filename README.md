@@ -1,4 +1,6 @@
-# AWS Akka-Http SPI implementation
+# AWS Akka-Http SPI implementation 
+
+[![Build Status](https://travis-ci.org/matsluni/aws-spi-akka-http.svg?branch=master)](https://travis-ci.org/matsluni/aws-spi-akka-http) [![License](http://img.shields.io/:license-Apache%202-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 This library implements the provided [SPI](https://en.wikipedia.org/wiki/Service_provider_interface) for the asynchronous 
 and non-blocking http calls in the new [AWS Java SDK](https://github.com/aws/aws-sdk-java-v2) with 
