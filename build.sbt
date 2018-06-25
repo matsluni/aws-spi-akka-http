@@ -4,7 +4,13 @@ lazy val repoResolvers = Seq(
 )
 
 lazy val commonSettings = Seq(
+  scalacOptions ++= Seq(
+    "-target:jvm-1.8",
+    "-encoding", "UTF-8",
+    "-unchecked",
+    "-deprecation"),
   scalaVersion := "2.12.6",
+  crossScalaVersions := Seq("2.11.12", "2.12.6"),
   organization := "com.github.matsluni",
   name := "aws-spi-akka-http",
   version := "0.0.1-SNAPSHOT",
