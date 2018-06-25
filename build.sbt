@@ -10,13 +10,21 @@ lazy val commonSettings = Seq(
     "-unchecked",
     "-deprecation"),
   scalaVersion := "2.12.6",
+  description := "An alternative non-blocking async http engine for aws-sdk-java-v2 based on akka-http",
   crossScalaVersions := Seq("2.11.12", "2.12.6"),
   organization := "com.github.matsluni",
   name := "aws-spi-akka-http",
   version := "0.0.1-SNAPSHOT",
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   organizationName := "Matthias Lüneberg",
-  startYear := Some(2018)
+  startYear := Some(2018),
+  homepage := Some(url("https://github.com/matsluni/aws-spi-akka-http")),
+  organizationHomepage := Some(url("https://github.com/matsluni/aws-spi-akka-http")),
+  developers := Developer("matsluni", "Matthias Lüneberg", "", url("https://github.com/matsluni")) :: Nil,
+  scmInfo := Some(ScmInfo(
+    browseUrl = url("https://github.com/matsluni/aws-spi-akka-http.git"),
+    connection = "scm:git:git@github.com:matsluni/aws-spi-akka-http.git"
+  ))
 )
 
 lazy val IntegrationTest = config("it") extend(Test)
