@@ -13,6 +13,10 @@ cache:
 jdk:
   - oraclejdk8
 
+before_script:
+  # For DynamoDB
+  - export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$HOME/.ivy2/cache/com.almworks.sqlite4java/libsqlite4java-linux-amd64/sos
+
 script:
   ## This runs the template with the default parameters, and runs test within the templated app.
   - sbt -Dfile.encoding=UTF8 -J-XX:ReservedCodeCacheSize=256M test
