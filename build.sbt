@@ -14,7 +14,6 @@ lazy val commonSettings = Seq(
   crossScalaVersions := Seq("2.11.12", "2.12.6"),
   organization := "com.github.matsluni",
   name := "aws-spi-akka-http",
-  version := "0.0.1-SNAPSHOT",
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   organizationName := "Matthias Lüneberg",
   startYear := Some(2018),
@@ -39,6 +38,19 @@ lazy val root = (project in file("."))
     headerSettings(Test, IntegrationTest),
     libraryDependencies ++= deps,
     fork in Test := true,
+    releasePublishArtifactsAction := PgpKeys.publishSigned.value,
+    useGpg := false,
+    pgpPublicRing := file(Path.userHome.absolutePath + "/.gnupg/pubring.gpg"),
+    pgpSecretRing := file(Path.userHome.absolutePath + "/.gnupg/secring.gpg"),
+    pgpPassphrase := sys.env.get("PGP_PASS").map(_.toArray),
+    publishMavenStyle := true,
+    publishArtifact in Test := false,
+    pomIncludeRepository := (_ => false),
+    publishTo := Some(
+      if (version.value.trim.endsWith("SNAPSHOT"))
+        "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+      else
+        "releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2"),
     resolvers ++= repoResolvers
   )
 
