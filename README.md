@@ -1,6 +1,8 @@
 # AWS Akka-Http SPI implementation 
 
-[![Build Status](https://travis-ci.org/matsluni/aws-spi-akka-http.svg?branch=master)](https://travis-ci.org/matsluni/aws-spi-akka-http) [![License](http://img.shields.io/:license-Apache%202-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
+[![Build Status](https://travis-ci.org/matsluni/aws-spi-akka-http.svg?branch=master)](https://travis-ci.org/matsluni/aws-spi-akka-http) 
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.matsluni/aws-spi-akka-http_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.matsluni/aws-spi-akka-http_2.12)
+[![License](http://img.shields.io/:license-Apache%202-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 This library implements the provided [SPI](https://en.wikipedia.org/wiki/Service_provider_interface) for the asynchronous 
 and non-blocking http calls in the new [AWS Java SDK](https://github.com/aws/aws-sdk-java-v2) with 
@@ -13,29 +15,17 @@ Also, the underlying SPI is subject to change.
 
 ## Usage
 
-Currently, there is no binary release available (probably available soon). The current way to try it out, is to build and 
-publish it locally, e.g. in `sbt` run:
+Create a dependency to this library by adding the following to your `build.sbt`:
 
-    publishLocal
-     
-to install it in the local Ivy repository or
-
-    publishM2
+    "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.1"
     
-to install it in the local Maven repository.
-
-
-Then its available as a dependency, e.g. in SBT
-
-    "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.1-SNAPSHOT"
-    
-or for Maven
+or for Maven, the following to `pom.xml`:
 
 ```
 <dependency>
     <groupId>com.github.matsluni</groupId>
     <artifactId>aws-spi-akka-http_2.12</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version>
 </dependency>
 ```
 
