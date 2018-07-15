@@ -57,7 +57,7 @@ lazy val root = (project in file("."))
 
 lazy val deps = {
   val awsSDKVersion = "2.0.0-preview-10"
-  val akkaVersion = "2.5.13"
+  val akkaVersion = "2.5.14"
   val AkkaHttpVersion = "10.1.3"
 
   Seq(
@@ -69,12 +69,12 @@ lazy val deps = {
     "software.amazon.awssdk"  %  "dynamodb"           % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
     "software.amazon.awssdk"  %  "sqs"                % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
 
-    "io.findify"              %% "s3mock"             % "0.2.4"         % "test",
+    "io.findify"              %% "s3mock"             % "0.2.5"         % "test",
     "com.amazonaws"           %  "DynamoDBLocal"      % "1.11.119"      % "test",
-    "org.elasticmq"           %% "elasticmq-server"   % "0.13.9"        % "test",
+    "org.elasticmq"           %% "elasticmq-server"   % "0.14.1"        % "test",
     "junit"                   %  "junit"              % "4.12"          % "test",
 
-    "org.scala-lang.modules"  %% "scala-java8-compat" % "0.8.0"         % "it,test",
+    "org.scala-lang.modules"  %% "scala-java8-compat" % "0.9.0"         % "it,test",
     "org.scalatest"           %% "scalatest"          % "3.0.5"         % "it,test",
     "ch.qos.logback"          %  "logback-classic"    % "1.2.3"         % "it,test"
   )
