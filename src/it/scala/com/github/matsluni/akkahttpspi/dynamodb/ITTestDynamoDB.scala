@@ -19,26 +19,23 @@ package com.github.matsluni.akkahttpspi.dynamodb
 import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, TestBase}
 import org.scalatest.concurrent.{Eventually, Futures, IntegrationPatience}
 import org.scalatest.{Matchers, WordSpec}
-import software.amazon.awssdk.services.dynamodb.DynamoDBAsyncClient
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.awssdk.services.dynamodb.model._
 import org.scalatest.concurrent.ScalaFutures._
-import software.amazon.awssdk.core.client.builder.ClientAsyncHttpConfiguration
-import software.amazon.awssdk.utils.AttributeMap
 
 import scala.compat.java8.FutureConverters._
 
 class ITTestDynamoDB extends WordSpec with Matchers with Futures with Eventually with IntegrationPatience with TestBase {
 
-  def withClient(testCode: DynamoDBAsyncClient => Any) {
+  def withClient(testCode: DynamoDbAsyncClient => Any) {
 
-    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().createHttpClientWithDefaults(AttributeMap.empty())
+    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
 
-    val client = DynamoDBAsyncClient
+    val client = DynamoDbAsyncClient
       .builder()
       .credentialsProvider(credentialProviderChain)
       .region(defaultRegion)
-      .asyncHttpConfiguration(
-        ClientAsyncHttpConfiguration.builder().httpClient(akkaClient).build())
+      .httpClient(akkaClient)
       .build()
 
     try {

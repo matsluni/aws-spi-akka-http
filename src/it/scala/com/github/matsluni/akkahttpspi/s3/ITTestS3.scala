@@ -21,10 +21,8 @@ import java.io.{File, FileWriter}
 import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, TestBase}
 import org.scalatest.{Matchers, WordSpec}
 import software.amazon.awssdk.core.async.AsyncResponseTransformer
-import software.amazon.awssdk.core.client.builder.ClientAsyncHttpConfiguration
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model._
-import software.amazon.awssdk.utils.AttributeMap
 
 import scala.util.Random
 
@@ -32,13 +30,13 @@ class ITTestS3 extends WordSpec with Matchers with TestBase {
 
   def withClient(testCode: S3AsyncClient => Any) {
 
-    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().createHttpClientWithDefaults(AttributeMap.empty())
+    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
 
     val client = S3AsyncClient
       .builder()
       .credentialsProvider(credentialProviderChain)
       .region(defaultRegion)
-      .asyncHttpConfiguration(ClientAsyncHttpConfiguration.builder().httpClient(akkaClient).build())
+      .httpClient(akkaClient)
       .build()
 
     try {

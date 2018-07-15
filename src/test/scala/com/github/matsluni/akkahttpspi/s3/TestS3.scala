@@ -24,11 +24,9 @@ import org.scalatest.{Matchers, WordSpec}
 import io.findify.s3mock.S3Mock
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.core.async.AsyncResponseTransformer
-import software.amazon.awssdk.core.client.builder.ClientAsyncHttpConfiguration
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model._
-import software.amazon.awssdk.utils.AttributeMap
 
 import scala.collection.JavaConverters._
 import scala.util.Random
@@ -39,15 +37,14 @@ class TestS3 extends WordSpec with Matchers {
   def withClient(testCode: S3AsyncClient => Any) {
     val api = new S3Mock.Builder().withPort(8001).withInMemoryBackend.build
 
-    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().createHttpClientWithDefaults(AttributeMap.empty())
+    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
 
     val client = S3AsyncClient
       .builder()
       .credentialsProvider(AnonymousCredentialsProvider.create())
       .endpointOverride(new URI("http://localhost:8001"))
       .region(Region.of("s3"))
-      .asyncHttpConfiguration(
-        ClientAsyncHttpConfiguration.builder().httpClient(akkaClient).build())
+      .httpClient(akkaClient)
       .build()
 
     try {

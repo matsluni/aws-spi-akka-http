@@ -19,14 +19,12 @@ package com.github.matsluni.akkahttpspi.dynamodb
 import java.net.URI
 
 import org.scalatest.{Matchers, WordSpec}
-import software.amazon.awssdk.auth.credentials.{AwsCredentials, StaticCredentialsProvider}
+import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.dynamodb.DynamoDBAsyncClient
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.awssdk.services.dynamodb.model._
 import com.amazonaws.services.dynamodbv2.local.main.ServerRunner
 import com.github.matsluni.akkahttpspi.AkkaHttpAsyncHttpService
-import software.amazon.awssdk.core.client.builder.ClientAsyncHttpConfiguration
-import software.amazon.awssdk.utils.AttributeMap
 
 import scala.collection.JavaConverters._
 import scala.util.Random
@@ -34,22 +32,21 @@ import scala.util.Random
 class TestDynamoDB extends WordSpec with Matchers {
 
   // from http://www.scalatest.org/user_guide/sharing_fixtures
-  def withClient(port: Int = Random.nextInt(50000) + 1025)(testCode: DynamoDBAsyncClient => Any) {
+  def withClient(port: Int = Random.nextInt(50000) + 1025)(testCode: DynamoDbAsyncClient => Any) {
 
     // For the local DynamoDB to work you need to copy the 'libsqlite4java-osx-1.0.392.dylib' from 'com.almworks.sqlite4java' (.ivy2)
     // to the 'java.library.path' e.g. ~/Library/Java/Extensions
     val server = ServerRunner.createServerFromCommandLineArgs(Array("-inMemory", "-port", port.toString))
     server.start()
 
-    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().createHttpClientWithDefaults(AttributeMap.empty())
+    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
 
-    val client = DynamoDBAsyncClient
+    val client = DynamoDbAsyncClient
       .builder()
       .endpointOverride(new URI(s"http://localhost:$port"))
       .region(Region.of("dynamodb"))
-      .credentialsProvider(StaticCredentialsProvider.create(AwsCredentials.create("x", "x")))
-      .asyncHttpConfiguration(
-        ClientAsyncHttpConfiguration.builder().httpClient(akkaClient).build())
+      .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
+      .httpClient(akkaClient)
       .build()
 
     try {

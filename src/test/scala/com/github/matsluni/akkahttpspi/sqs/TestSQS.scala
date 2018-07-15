@@ -21,10 +21,9 @@ import java.net.URI
 import com.github.matsluni.akkahttpspi.AkkaHttpAsyncHttpService
 import org.elasticmq.rest.sqs.SQSRestServerBuilder
 import org.scalatest.{Matchers, WordSpec}
-import software.amazon.awssdk.auth.credentials.{AwsCredentials, StaticCredentialsProvider}
-import software.amazon.awssdk.core.client.builder.ClientAsyncHttpConfiguration
+import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.sqs.SQSAsyncClient
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
 import software.amazon.awssdk.utils.AttributeMap
 
@@ -32,19 +31,18 @@ class TestSQS extends WordSpec with Matchers {
 
   val baseUrl = "http://localhost:9324"
 
-  def withClient(testCode: SQSAsyncClient => Any) {
+  def withClient(testCode: SqsAsyncClient => Any) {
     val server = SQSRestServerBuilder.withPort(9324).withInterface("localhost").start()
       server.waitUntilStarted()
 
-    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().createHttpClientWithDefaults(AttributeMap.empty())
+    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
 
-    val client = SQSAsyncClient
+    val client = SqsAsyncClient
       .builder()
-      .credentialsProvider(StaticCredentialsProvider.create(AwsCredentials.create("x", "x")))
+      .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
       .region(Region.of("elasticmq"))
       .endpointOverride(new URI(baseUrl))
-      .asyncHttpConfiguration(
-        ClientAsyncHttpConfiguration.builder().httpClient(akkaClient).build())
+      .httpClient(akkaClient)
       .build()
 
     try {
@@ -75,7 +73,7 @@ class TestSQS extends WordSpec with Matchers {
       client.deleteMessage(DeleteMessageRequest.builder().queueUrl(s"$baseUrl/queue/foo").receiptHandle(receivedMessages.messages().get(0).receiptHandle()).build()).join()
 
       val receivedMessage = client.receiveMessage(ReceiveMessageRequest.builder().queueUrl(s"$baseUrl/queue/foo").maxNumberOfMessages(1).waitTimeSeconds(1).build()).join()
-      receivedMessage.messages() should be (null)
+      receivedMessage.messages() should be ('empty)
     }
 
   }

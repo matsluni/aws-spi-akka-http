@@ -16,41 +16,9 @@
 
 package com.github.matsluni.akkahttpspi
 
-import java.util.concurrent.TimeUnit
-
-import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.stream.ActorMaterializer
-import software.amazon.awssdk.http.async.{SdkAsyncHttpClient, SdkAsyncHttpClientFactory, SdkAsyncHttpService}
-import software.amazon.awssdk.utils.AttributeMap
-
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext}
+import com.github.matsluni.akkahttpspi.AkkaHttpClient.AkkaHttpClientBuilder
+import software.amazon.awssdk.http.async.SdkAsyncHttpService
 
 class AkkaHttpAsyncHttpService extends SdkAsyncHttpService {
-  override def createAsyncHttpClientFactory(): SdkAsyncHttpClientFactory = new AkkaAsyncHttpClientFactory
-}
-
-class AkkaAsyncHttpClientFactory extends SdkAsyncHttpClientFactory {
-  override def createHttpClientWithDefaults(serviceDefaults: AttributeMap): SdkAsyncHttpClient = AkkaAsyncHttpClientFactoryBuilder().build()
-  case class AkkaAsyncHttpClientFactoryBuilder(private val actorSystem: Option[ActorSystem] = None,
-                                               private val executionContext: Option[ExecutionContext] = None) {
-
-    def withActorSystem(actorSystem: ActorSystem): AkkaAsyncHttpClientFactoryBuilder = copy(actorSystem = Some(actorSystem))
-    def withExecutionContext(executionContext: ExecutionContext): AkkaAsyncHttpClientFactoryBuilder = copy(executionContext = Some(executionContext))
-    def build(): SdkAsyncHttpClient = {
-      implicit val as = actorSystem.getOrElse(ActorSystem("aws-akka-http"))
-      implicit val ec = executionContext.getOrElse(as.dispatcher)
-      val mat: ActorMaterializer = ActorMaterializer()
-
-      val shutdownhandleF = () => {
-        if (actorSystem.isEmpty) {
-          Await.result(Http().shutdownAllConnectionPools().flatMap(_ => as.terminate()), Duration.apply(10, TimeUnit.SECONDS))
-          mat.shutdown()
-        }
-      }
-      new AkkaHttpClient(shutdownhandleF)(as, ec, mat)
-    }
-  }
-
+  override def createAsyncHttpClientFactory(): AkkaHttpClientBuilder = AkkaHttpClient.builder()
 }

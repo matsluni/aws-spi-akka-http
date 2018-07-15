@@ -119,6 +119,27 @@ class AkkaHttpClient(shutdownHandle: () => Unit)(implicit actorSystem: ActorSyst
 }
 
 object AkkaHttpClient {
+  def builder() = AkkaHttpClientBuilder()
+
+  case class AkkaHttpClientBuilder(private val actorSystem: Option[ActorSystem] = None,
+                                   private val executionContext: Option[ExecutionContext] = None) extends SdkAsyncHttpClient.Builder[AkkaHttpClientBuilder] {
+    def buildWithDefaults(attributeMap: AttributeMap): SdkAsyncHttpClient = {
+      implicit val as = actorSystem.getOrElse(ActorSystem("aws-akka-http"))
+      implicit val ec = executionContext.getOrElse(as.dispatcher)
+      val mat: ActorMaterializer = ActorMaterializer()
+
+      val shutdownhandleF = () => {
+        if (actorSystem.isEmpty) {
+          Await.result(Http().shutdownAllConnectionPools().flatMap(_ => as.terminate()), Duration.apply(10, TimeUnit.SECONDS))
+          mat.shutdown()
+        }
+      }
+      new AkkaHttpClient(shutdownhandleF)(as, ec, mat)
+    }
+    def withActorSystem(actorSystem: ActorSystem): AkkaHttpClientBuilder = copy(actorSystem = Some(actorSystem))
+    def withExecutionContext(executionContext: ExecutionContext): AkkaHttpClientBuilder = copy(executionContext = Some(executionContext))
+  }
+
   lazy val xAmzJson = ContentType(MediaType.customBinary("application", "x-amz-json-1.0", Compressible))
   lazy val xAmzJson11 = ContentType(MediaType.customBinary("application", "x-amz-json-1.1", Compressible))
   lazy val formUrlEncoded = ContentType(MediaTypes.`application/x-www-form-urlencoded`, HttpCharset.custom("utf-8"))

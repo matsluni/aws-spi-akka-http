@@ -18,24 +18,21 @@ package com.github.matsluni.akkahttpspi.sqs
 
 import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, TestBase}
 import org.scalatest.{Matchers, WordSpec}
-import software.amazon.awssdk.core.client.builder.ClientAsyncHttpConfiguration
-import software.amazon.awssdk.services.sqs.SQSAsyncClient
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, DeleteQueueRequest, ReceiveMessageRequest, SendMessageRequest}
-import software.amazon.awssdk.utils.AttributeMap
 
 import scala.util.Random
 
 class ITTestSQS extends WordSpec with Matchers with TestBase {
 
-  def withClient(testCode: SQSAsyncClient => Any) {
+  def withClient(testCode: SqsAsyncClient => Any) {
 
-    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().createHttpClientWithDefaults(AttributeMap.empty())
+    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
 
-    val client = SQSAsyncClient
+    val client = SqsAsyncClient
       .builder()
       .credentialsProvider(credentialProviderChain)
-      .asyncHttpConfiguration(
-        ClientAsyncHttpConfiguration.builder().httpClient(akkaClient).build())
+      .httpClient(akkaClient)
       .region(defaultRegion)
       .build()
 
@@ -62,7 +59,7 @@ class ITTestSQS extends WordSpec with Matchers with TestBase {
       client.deleteQueue(DeleteQueueRequest.builder().queueUrl(queueUrl).build()).join()
 
       val queueListing = client.listQueues().join()
-      queueListing.queueUrls() should be (null)
+      queueListing.queueUrls() should be ('empty)
 
     }
   }

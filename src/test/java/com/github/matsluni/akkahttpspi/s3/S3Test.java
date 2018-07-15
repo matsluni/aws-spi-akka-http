@@ -16,28 +16,26 @@
 
 package com.github.matsluni.akkahttpspi.s3;
 
-import com.github.matsluni.akkahttpspi.AkkaHttpAsyncHttpService;
-import io.findify.s3mock.S3Mock;
+import static org.junit.Assert.assertEquals;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.net.URI;
+
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
+import com.github.matsluni.akkahttpspi.AkkaHttpAsyncHttpService;
+import io.findify.s3mock.S3Mock;
 import scala.util.Random;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
-import software.amazon.awssdk.core.client.builder.ClientAsyncHttpConfiguration;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.utils.AttributeMap;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.net.URI;
-
-import static org.junit.Assert.*;
 
 public class S3Test extends JUnitSuite {
 
@@ -52,15 +50,14 @@ public class S3Test extends JUnitSuite {
       api = new S3Mock.Builder().withPort(8001).withInMemoryBackend().build();
       api.start();
 
-      akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().createHttpClientWithDefaults(AttributeMap.empty());
+      akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build();
 
       client = S3AsyncClient
               .builder()
               .credentialsProvider(AnonymousCredentialsProvider.create())
               .endpointOverride(new URI("http://localhost:8001"))
               .region(Region.of("s3"))
-              .asyncHttpConfiguration(
-                      ClientAsyncHttpConfiguration.builder().httpClient(akkaClient).build())
+              .httpClient(akkaClient)
               .build();
 
       client.createBucket(CreateBucketRequest.builder().bucket("foo").build()).join();
