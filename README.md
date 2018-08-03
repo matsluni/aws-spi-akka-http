@@ -17,7 +17,7 @@ Also, the underlying SPI is subject to change.
 
 Create a dependency to this library by adding the following to your `build.sbt`:
 
-    "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.1"
+    "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.2"
     
 or for Maven, the following to `pom.xml`:
 
@@ -25,20 +25,20 @@ or for Maven, the following to `pom.xml`:
 <dependency>
     <groupId>com.github.matsluni</groupId>
     <artifactId>aws-spi-akka-http_2.12</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
 </dependency>
 ```
 
 An example (in scala) from the test shows how to use akka-http as the underlying http provider instead of netty.
 
 ```scala
-val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().createHttpClientWithDefaults(AttributeMap.empty())
+val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
 
 val client = S3AsyncClient
               .builder()
               .credentialsProvider(ProfileCredentialsProvider.builder().build())
               .region(Region.EU_CENTRAL_1)
-              .asyncHttpConfiguration(ClientAsyncHttpConfiguration.builder().httpClient(akkaClient).build())
+              .httpClient(akkaClient)
               .build()
               
 val eventualResponse = client.listBuckets()
