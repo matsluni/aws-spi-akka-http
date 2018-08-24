@@ -58,7 +58,7 @@ lazy val root = (project in file("."))
 lazy val deps = {
   val awsSDKVersion = "2.0.0-preview-11"
   val akkaVersion = "2.5.14"
-  val AkkaHttpVersion = "10.1.3"
+  val AkkaHttpVersion = "10.1.4"
 
   Seq(
     "com.typesafe.akka"       %% "akka-stream"        % akkaVersion     withSources(),
