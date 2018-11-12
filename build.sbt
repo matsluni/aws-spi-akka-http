@@ -57,7 +57,7 @@ lazy val root = (project in file("."))
 
 lazy val deps = {
   val awsSDKVersion = "2.0.0-preview-12"
-  val akkaVersion = "2.5.17"
+  val akkaVersion = "2.5.18"
   val AkkaHttpVersion = "10.1.5"
 
   Seq(
