@@ -17,7 +17,7 @@ Also, the underlying SPI is subject to change.
 
 Create a dependency to this library by adding the following to your `build.sbt`:
 
-    "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.3"
+    "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.4"
     
 or for Maven, the following to `pom.xml`:
 
@@ -25,7 +25,7 @@ or for Maven, the following to `pom.xml`:
 <dependency>
     <groupId>com.github.matsluni</groupId>
     <artifactId>aws-spi-akka-http_2.12</artifactId>
-    <version>0.0.3</version>
+    <version>0.0.4</version>
 </dependency>
 ```
 
