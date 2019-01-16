@@ -16,8 +16,7 @@
 
 package com.github.matsluni.akkahttpspi
 
-import java.util.Optional
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{CompletableFuture, TimeUnit}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -31,11 +30,12 @@ import akka.stream.scaladsl.Source
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
 import org.slf4j.LoggerFactory
-import software.amazon.awssdk.http.async.{AbortableRunnable, SdkAsyncHttpClient, SdkHttpRequestProvider, SdkHttpResponseHandler}
-import software.amazon.awssdk.http.{SdkHttpConfigurationOption, SdkHttpRequest, SdkRequestContext}
+import software.amazon.awssdk.http.async._
+import software.amazon.awssdk.http.SdkHttpRequest
 import software.amazon.awssdk.utils.AttributeMap
 
 import scala.collection.JavaConverters._
+import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext}
 
@@ -43,45 +43,40 @@ class AkkaHttpClient(shutdownHandle: () => Unit)(implicit actorSystem: ActorSyst
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
-  override def prepareRequest(request: SdkHttpRequest, context: SdkRequestContext, requestProvider: SdkHttpRequestProvider, handler: SdkHttpResponseHandler[_]): AbortableRunnable = {
-    new RunnableRequest(toAkkaRequest(request, requestProvider), handler)
-  }
+  override def execute(request: AsyncExecuteRequest): CompletableFuture[Void] =
+    new RunnableRequest(toAkkaRequest(request.request(), request.requestContentPublisher()), request.responseHandler()).run()
 
   override def close(): Unit = {
     shutdownHandle()
   }
 
-  override def getConfigurationValue[T](key: SdkHttpConfigurationOption[T]): Optional[T] = Optional.empty[T]
-
-  private def toAkkaRequest(request: SdkHttpRequest, requestProvider: SdkHttpRequestProvider): HttpRequest = {
+  private def toAkkaRequest(request: SdkHttpRequest, contentPublisher: SdkHttpContentPublisher): HttpRequest = {
     val headers = convertHeaders(request.headers())
     val method = convertMethod(request.method().name())
     HttpRequest(
-     method = method,
-     uri = Uri(request.getUri.toString),
-     headers = filterContentTypeAndContentLengthHeader(headers),
-     entity = entityForMethodAndContentType(method, contentTypeHeaderToContentType(headers), requestProvider),
-     protocol = HttpProtocols.`HTTP/1.1`
+      method   = method,
+      uri      = Uri(request.getUri.toString),
+      headers  = filterContentTypeAndContentLengthHeader(headers),
+      entity   = entityForMethodAndContentType(method, contentTypeHeaderToContentType(headers), contentPublisher),
+      protocol = HttpProtocols.`HTTP/1.1`
    )
   }
 
-  private def entityForMethodAndContentType(method: HttpMethod, contentType: ContentType, requestProvider: SdkHttpRequestProvider): RequestEntity = {
+  private def entityForMethodAndContentType(method: HttpMethod,
+                                            contentType: ContentType,
+                                            contentPublisher: SdkHttpContentPublisher): RequestEntity =
     method.requestEntityAcceptance match {
-      case Expected => HttpEntity(contentType, requestProvider.contentLength(), Source.fromPublisher(requestProvider).map(ByteString(_)))
+      case Expected => contentPublisher.contentLength().asScala match {
+        case Some(length) => HttpEntity(contentType, length, Source.fromPublisher(contentPublisher).map(ByteString(_)))
+        case None         => HttpEntity(contentType, Source.fromPublisher(contentPublisher).map(ByteString(_)))
+      }
       case _ => HttpEntity.empty(Empty.contentType)
     }
-  }
 
-  private def convertMethod(method: String) = method match {
-    case "PUT" => HttpMethods.PUT
-    case "POST" => HttpMethods.POST
-    case "GET" => HttpMethods.GET
-    case "DELETE" => HttpMethods.DELETE
-    case "HEAD" => HttpMethods.HEAD
-    case "OPTIONS" => HttpMethods.OPTIONS
-    case "PATCH" => HttpMethods.PATCH
-    case "CONNECT" => HttpMethods.CONNECT
-    case _ => throw new IllegalArgumentException(s"Method not configured: ${method}")
+  private def convertMethod(method: String): HttpMethod = {
+    HttpMethods
+      .getForKeyCaseInsensitive(method)
+      .getOrElse(throw new IllegalArgumentException(s"Method not configured: ${method}"))
   }
 
   private def contentTypeHeaderToContentType(headers: List[HttpHeader]): ContentType = {

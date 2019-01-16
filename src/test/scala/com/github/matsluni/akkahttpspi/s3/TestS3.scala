@@ -25,7 +25,7 @@ import io.findify.s3mock.S3Mock
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.core.async.AsyncResponseTransformer
 import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.s3.S3AsyncClient
+import software.amazon.awssdk.services.s3.{S3AsyncClient, S3Configuration}
 import software.amazon.awssdk.services.s3.model._
 
 import scala.collection.JavaConverters._
@@ -41,6 +41,7 @@ class TestS3 extends WordSpec with Matchers {
 
     val client = S3AsyncClient
       .builder()
+      .serviceConfiguration(S3Configuration.builder().build())
       .credentialsProvider(AnonymousCredentialsProvider.create())
       .endpointOverride(new URI("http://localhost:8001"))
       .region(Region.of("s3"))

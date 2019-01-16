@@ -18,10 +18,11 @@
     <logger name="com.typesafe" level="error" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>
-    <logger name="akka" level="error" additivity="false">
+    <logger name="akka.http" level="error" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>
-    <logger name="akka.http" level="error" additivity="false">
+    <!-- Log of http content // with akka.http.client.log-unencrypted-network-bytes = 10000 -->
+    <logger name="akka.stream" level="error" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>
     <logger name="com.matsluni" level="debug" additivity="false">

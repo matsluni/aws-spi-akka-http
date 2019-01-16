@@ -9,9 +9,9 @@ lazy val commonSettings = Seq(
     "-encoding", "UTF-8",
     "-unchecked",
     "-deprecation"),
-  scalaVersion := "2.12.7",
+  scalaVersion := "2.12.8",
   description := "An alternative non-blocking async http engine for aws-sdk-java-v2 based on akka-http",
-  crossScalaVersions := Seq("2.11.12", "2.12.7"),
+  crossScalaVersions := Seq("2.11.12", "2.12.8"),
   organization := "com.github.matsluni",
   name := "aws-spi-akka-http",
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
@@ -56,9 +56,9 @@ lazy val root = (project in file("."))
 
 
 lazy val deps = {
-  val awsSDKVersion = "2.0.0-preview-12"
-  val akkaVersion = "2.5.18"
-  val AkkaHttpVersion = "10.1.5"
+  val awsSDKVersion = "2.3.2"
+  val akkaVersion = "2.5.19"
+  val AkkaHttpVersion = "10.1.7"
 
   Seq(
     "com.typesafe.akka"       %% "akka-stream"        % akkaVersion     withSources(),

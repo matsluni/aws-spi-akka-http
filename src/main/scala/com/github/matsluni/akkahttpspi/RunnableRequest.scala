@@ -17,6 +17,7 @@
 package com.github.matsluni.akkahttpspi
 
 import java.nio.ByteBuffer
+import java.util.concurrent.CompletableFuture
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -26,16 +27,19 @@ import akka.stream.scaladsl.Sink
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.http.SdkHttpFullResponse
-import software.amazon.awssdk.http.async.{AbortableRunnable, SdkHttpResponseHandler}
+import software.amazon.awssdk.http.async.SdkAsyncHttpResponseHandler
 
 import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContext
+import scala.compat.java8.FutureConverters
+import scala.concurrent.{ExecutionContext, Promise}
+import scala.util.Success
 
-class RunnableRequest(httpRequest: HttpRequest, handler: SdkHttpResponseHandler[_])(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) extends AbortableRunnable {
+class RunnableRequest(httpRequest: HttpRequest, handler: SdkAsyncHttpResponseHandler)(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) {
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
-  override def run(): Unit = {
+  def run(): CompletableFuture[Void] = {
+    val p = Promise[Void]()
     Http().singleRequest(httpRequest).foreach { res =>
 
       val response = SdkHttpFullResponse.builder()
@@ -44,30 +48,35 @@ class RunnableRequest(httpRequest: HttpRequest, handler: SdkHttpResponseHandler[
         .statusText(res.status.reason)
         .build
 
-      handler.headersReceived(response)
+      handler.onHeaders(response)
 
       val dataPublisher = res.entity.dataBytes.map(_.asByteBuffer).runWith(Sink.asPublisher(fanout = false))
-      handler.onStream(new PublisherDecorator(dataPublisher, handler))
+      handler.onStream(new PublisherDecorator(dataPublisher, p))
     }
+    FutureConverters.toJava(p.future).toCompletableFuture
   }
 
-  override def abort(): Unit = {
-    // just returns unit for now
-  }
+  private class PublisherDecorator(protected val publisherDelegate: Publisher[ByteBuffer],
+                                   protected val resultPromise: Promise[Void]) extends Publisher[ByteBuffer] {
 
-  private class PublisherDecorator(protected val publisherDelegate: Publisher[ByteBuffer], private val handler: SdkHttpResponseHandler[_]) extends Publisher[ByteBuffer] {
+    override def subscribe(s: Subscriber[_ >: ByteBuffer]): Unit =
+      publisherDelegate.subscribe(new SubscriberDecorator(s, resultPromise))
 
-    override def subscribe(s: Subscriber[_ >: ByteBuffer]): Unit = {
-      publisherDelegate.subscribe(new SubscriberDecorator(s, handler))
-    }
+    private class SubscriberDecorator(protected val subscriberDelegate: Subscriber[_ >: ByteBuffer],
+                                      protected val resultPromise: Promise[Void]) extends Subscriber[ByteBuffer] {
 
-    private class SubscriberDecorator(protected val subscriberDelegate: Subscriber[_ >: ByteBuffer], private val handler: SdkHttpResponseHandler[_]) extends Subscriber[ByteBuffer] {
       override def onSubscribe(s: Subscription): Unit = subscriberDelegate.onSubscribe(s)
-      override def onNext(t: ByteBuffer): Unit        = subscriberDelegate.onNext(t)
-      override def onError(t: Throwable): Unit        = subscriberDelegate.onError(t)
+
+      override def onNext(t: ByteBuffer): Unit = subscriberDelegate.onNext(t)
+
+      override def onError(t: Throwable): Unit = {
+        subscriberDelegate.onError(t)
+        resultPromise.failure(t)
+      }
+
       override def onComplete(): Unit = {
         subscriberDelegate.onComplete()
-        handler.complete()
+        resultPromise.complete(Success(null))
       }
     }
   }
