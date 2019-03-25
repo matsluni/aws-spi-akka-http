@@ -16,51 +16,16 @@
 
 package com.github.matsluni.akkahttpspi.dynamodb
 
-import java.net.URI
-
-import org.scalatest.{Matchers, WordSpec}
+import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, BaseAwsClientTest, LocalstackBaseAwsClientTest}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
-import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.awssdk.services.dynamodb.model._
-import com.amazonaws.services.dynamodbv2.local.main.ServerRunner
-import com.github.matsluni.akkahttpspi.AkkaHttpAsyncHttpService
 
 import scala.collection.JavaConverters._
-import scala.util.Random
 
-class TestDynamoDB extends WordSpec with Matchers {
-
-  // from http://www.scalatest.org/user_guide/sharing_fixtures
-  def withClient(port: Int = Random.nextInt(50000) + 1025)(testCode: DynamoDbAsyncClient => Any) {
-
-    // For the local DynamoDB to work you need to copy the 'libsqlite4java-osx-1.0.392.dylib' from 'com.almworks.sqlite4java' (.ivy2)
-    // to the 'java.library.path' e.g. ~/Library/Java/Extensions
-    val server = ServerRunner.createServerFromCommandLineArgs(Array("-inMemory", "-port", port.toString))
-    server.start()
-
-    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
-
-    val client = DynamoDbAsyncClient
-      .builder()
-      .endpointOverride(new URI(s"http://localhost:$port"))
-      .region(Region.of("dynamodb"))
-      .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
-      .httpClient(akkaClient)
-      .build()
-
-    try {
-      testCode(client)
-    }
-    finally { // clean up
-      server.stop()
-      akkaClient.close()
-      client.close()
-    }
-  }
-
+class TestDynamoDB extends LocalstackBaseAwsClientTest[DynamoDbAsyncClient] {
   "DynamoDB" should {
-    "create a table" in withClient() { implicit client =>
+    "create a table" in {
       val attributes = AttributeDefinition.builder.attributeName("film_id").attributeType(ScalarAttributeType.S).build()
       val keySchema = KeySchemaElement.builder.attributeName("film_id").keyType(KeyType.HASH).build()
 
@@ -73,13 +38,29 @@ class TestDynamoDB extends WordSpec with Matchers {
           .build()).join
 
       val desc = result.tableDescription()
-      desc.tableName() should be ("Movies")
-
+      desc.tableName() should be("Movies")
     }
 
-    "list all tables" in withClient() { implicit client =>
+    "list all tables" in {
       val tableResult = client.listTables().join()
-      tableResult.tableNames().asScala should have size(0)
+      tableResult.tableNames().asScala should have size (0)
     }
   }
+
+  override val service: String = "dynamodb"
+
+  override def client: DynamoDbAsyncClient = DynamoDbAsyncClient
+    .builder()
+    .endpointOverride(endpoint)
+    .region(defaultRegion)
+    .httpClient(new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build())
+    .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
+    .build()
+
+  before {
+    client.listTables().join().tableNames().forEach { t =>
+      client.deleteTable(DeleteTableRequest.builder().tableName(t).build()).join()
+    }
+  }
+
 }

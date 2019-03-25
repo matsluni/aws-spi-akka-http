@@ -107,7 +107,7 @@ class AkkaHttpClient(shutdownHandle: () => Unit)(implicit actorSystem: ActorSyst
     logger.info(s"Try to content type from $string")
     val mainAndsubType = string.split('/')
     if (mainAndsubType.length == 2)
-      ContentType(MediaType.customBinary(mainAndsubType(1), mainAndsubType(2), Compressible))
+      ContentType(MediaType.customBinary(mainAndsubType(0), mainAndsubType(1), Compressible))
     else throw new RuntimeException("Could not parse custom media type")
   }
 

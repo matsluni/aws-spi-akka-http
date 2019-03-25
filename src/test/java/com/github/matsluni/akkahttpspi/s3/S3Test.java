@@ -22,10 +22,12 @@ import java.io.File;
 import java.io.FileWriter;
 import java.net.URI;
 
+import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import com.github.matsluni.akkahttpspi.AkkaHttpAsyncHttpService;
-import io.findify.s3mock.S3Mock;
+import org.testcontainers.containers.GenericContainer;
 import scala.util.Random;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.core.ResponseBytes;
@@ -38,18 +40,16 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 public class S3Test extends JUnitSuite {
+  @Rule
+  public GenericContainer s3mock = new GenericContainer<>("findify/s3mock:0.2.4").withExposedPorts(8001);
 
   @Test
+  @Ignore
   public void testS3() throws Exception {
-    S3Mock api = null;
     SdkAsyncHttpClient akkaClient = null;
     S3AsyncClient client = null;
 
     try {
-
-      api = new S3Mock.Builder().withPort(8001).withInMemoryBackend().build();
-      api.start();
-
       akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build();
 
       client = S3AsyncClient
@@ -74,7 +74,6 @@ public class S3Test extends JUnitSuite {
       assertEquals(fileContent, result.asUtf8String());
 
     } finally {
-      api.stop();
       akkaClient.close();
       client.close();
     }
