@@ -1,8 +1,3 @@
-
-lazy val repoResolvers = Seq(
-  Resolver.mavenLocal, "DynamoDB Local Release Repository" at "https://s3-us-west-2.amazonaws.com/dynamodb-local/release"
-)
-
 lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
     "-target:jvm-1.8",
@@ -26,7 +21,7 @@ lazy val commonSettings = Seq(
   ))
 )
 
-lazy val IntegrationTest = config("it") extend(Test)
+lazy val IntegrationTest = config("it") extend Test
 
 lazy val root = (project in file("."))
   .enablePlugins(AutomateHeaderPlugin)
@@ -50,8 +45,7 @@ lazy val root = (project in file("."))
       if (version.value.trim.endsWith("SNAPSHOT"))
         "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
       else
-        "releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2"),
-    resolvers ++= repoResolvers
+        "releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
   )
 
 

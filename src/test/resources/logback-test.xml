@@ -25,13 +25,13 @@
     <logger name="akka.stream" level="error" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>
+    <logger name="org.testcontainers" level="info" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+    <logger name="com.github.dockerjava" level="info" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
     <logger name="com.matsluni" level="debug" additivity="false">
-        <appender-ref ref="STDOUT" />
-    </logger>
-    <logger name="io.findify.s3mock" level="debug" additivity="false">
-        <appender-ref ref="STDOUT" />
-    </logger>
-    <logger name="org.elasticmq" level="debug" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>
     <logger name="software.amazon" level="error" additivity="false">

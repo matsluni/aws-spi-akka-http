@@ -25,6 +25,7 @@ import org.testcontainers.containers.output.{OutputFrame, WaitingConsumer}
 import org.testcontainers.containers.wait.strategy.AbstractWaitStrategy
 import org.testcontainers.utility.LogUtils
 
+import scala.compat.java8.FunctionConverters._
 /**
   * This strategy is based on the container log "Ready." from Localstack.
   * Once it's printed out, the container is good to go.
@@ -34,7 +35,7 @@ object LocalStackReadyLogWaitStrategy extends AbstractWaitStrategy {
     val waitingConsumer = new WaitingConsumer
     LogUtils.followOutput(DockerClientFactory.instance.client, waitStrategyTarget.getContainerId, waitingConsumer)
 
-    val waitPredicate: Predicate[OutputFrame] = (outputFrame: OutputFrame) => outputFrame.getUtf8String.contains("Ready.")
+    val waitPredicate: Predicate[OutputFrame] = ((outputFrame: OutputFrame) => outputFrame.getUtf8String.contains("Ready.")).asJava
 
     try
       waitingConsumer.waitUntil(waitPredicate, startupTimeout.getSeconds, TimeUnit.SECONDS, 1)

@@ -16,7 +16,7 @@
 
 package com.github.matsluni.akkahttpspi.dynamodb
 
-import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, BaseAwsClientTest, LocalstackBaseAwsClientTest}
+import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, LocalstackBaseAwsClientTest}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.awssdk.services.dynamodb.model._
@@ -58,7 +58,7 @@ class TestDynamoDB extends LocalstackBaseAwsClientTest[DynamoDbAsyncClient] {
     .build()
 
   before {
-    client.listTables().join().tableNames().forEach { t =>
+    client.listTables().join().tableNames().asScala.foreach { t =>
       client.deleteTable(DeleteTableRequest.builder().tableName(t).build()).join()
     }
   }
