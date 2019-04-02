@@ -25,7 +25,7 @@ import scala.util.Random
 
 class ITTestSQS extends WordSpec with Matchers with TestBase {
 
-  def withClient(testCode: SqsAsyncClient => Any) {
+  def withClient(testCode: SqsAsyncClient => Any): Any = {
 
     val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
 

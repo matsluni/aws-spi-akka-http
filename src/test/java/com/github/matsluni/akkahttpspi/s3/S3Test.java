@@ -21,14 +21,14 @@ import static org.junit.Assert.assertEquals;
 import java.io.File;
 import java.io.FileWriter;
 import java.net.URI;
+import java.security.SecureRandom;
 
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
-import com.github.matsluni.akkahttpspi.AkkaHttpAsyncHttpService;
 import org.testcontainers.containers.GenericContainer;
-import scala.util.Random;
+import com.github.matsluni.akkahttpspi.AkkaHttpAsyncHttpService;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
@@ -40,6 +40,10 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 public class S3Test extends JUnitSuite {
+
+  private static final String AB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  private static SecureRandom rnd = new SecureRandom();
+
   @Rule
   public GenericContainer s3mock = new GenericContainer<>("findify/s3mock:0.2.4").withExposedPorts(8001);
 
@@ -61,8 +65,8 @@ public class S3Test extends JUnitSuite {
               .build();
 
       client.createBucket(CreateBucketRequest.builder().bucket("foo").build()).join();
-      File randomFile = File.createTempFile("aws1", new Random().alphanumeric().take(5).mkString());
-      String fileContent = new Random().alphanumeric().take(1000).mkString();
+      File randomFile = File.createTempFile("aws1", randomString(5));
+      String fileContent = randomString(1000);
       FileWriter fileWriter = new FileWriter(randomFile);
       fileWriter.write(fileContent);
       fileWriter.flush();
@@ -77,6 +81,13 @@ public class S3Test extends JUnitSuite {
       akkaClient.close();
       client.close();
     }
+  }
+
+  String randomString(int len) {
+  	 StringBuilder sb = new StringBuilder( len );
+  	 for( int i = 0; i < len; i++ )
+  	 	 sb.append( AB.charAt( rnd.nextInt(AB.length()) ) );
+  	 return sb.toString();
   }
 
 }

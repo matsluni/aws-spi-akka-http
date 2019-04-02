@@ -28,7 +28,7 @@ import scala.util.Random
 
 class ITTestS3 extends WordSpec with Matchers with TestBase {
 
-  def withClient(testCode: S3AsyncClient => Any) {
+  def withClient(testCode: S3AsyncClient => Any): Any = {
 
     val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
 

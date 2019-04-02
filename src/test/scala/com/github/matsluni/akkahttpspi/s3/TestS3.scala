@@ -85,7 +85,7 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
 
   }
 
-  def createBucket(name: String) {
+  def createBucket(name: String): Unit = {
     client.createBucket(CreateBucketRequest.builder().bucket(name).build()).join
   }
 

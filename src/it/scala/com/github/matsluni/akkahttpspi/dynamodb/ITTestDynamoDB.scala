@@ -27,7 +27,7 @@ import scala.compat.java8.FutureConverters._
 
 class ITTestDynamoDB extends WordSpec with Matchers with Futures with Eventually with IntegrationPatience with TestBase {
 
-  def withClient(testCode: DynamoDbAsyncClient => Any) {
+  def withClient(testCode: DynamoDbAsyncClient => Any): Any = {
 
     val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
 
