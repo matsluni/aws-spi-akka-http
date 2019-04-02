@@ -84,6 +84,7 @@ class AkkaHttpClient(shutdownHandle: () => Unit)(implicit actorSystem: ActorSyst
       case Some("application/x-amz-json-1.0") => AkkaHttpClient.xAmzJson
       case Some("application/x-amz-json-1.1") => AkkaHttpClient.xAmzJson11
       case Some("application/x-www-form-urlencoded; charset=UTF-8") => AkkaHttpClient.formUrlEncoded
+      case Some("application/x-www-form-urlencoded") => AkkaHttpClient.formUrlEncoded
       case Some("application/xml") => AkkaHttpClient.applicationXml
       case Some(s) => tryCreateCustomContentType(s)
       case None => AkkaHttpClient.formUrlEncoded
@@ -103,12 +104,12 @@ class AkkaHttpClient(shutdownHandle: () => Unit)(implicit actorSystem: ActorSyst
   private def filterContentTypeAndContentLengthHeader(headers: Seq[HttpHeader]): collection.immutable.Seq[HttpHeader] =
     headers.filterNot(h => h.lowercaseName() == "content-type" || h.lowercaseName() == "content-length").toList
 
-  private def tryCreateCustomContentType(string: String): ContentType = {
-    logger.info(s"Try to content type from $string")
-    val mainAndsubType = string.split('/')
+  private def tryCreateCustomContentType(contentTypeStr: String): ContentType = {
+    logger.info(s"Try to parse content type from $contentTypeStr")
+    val mainAndsubType = contentTypeStr.split('/')
     if (mainAndsubType.length == 2)
       ContentType(MediaType.customBinary(mainAndsubType(0), mainAndsubType(1), Compressible))
-    else throw new RuntimeException("Could not parse custom media type")
+    else throw new RuntimeException(s"Could not parse custom content type '$contentTypeStr'.")
   }
 
 }
@@ -137,6 +138,6 @@ object AkkaHttpClient {
 
   lazy val xAmzJson = ContentType(MediaType.customBinary("application", "x-amz-json-1.0", Compressible))
   lazy val xAmzJson11 = ContentType(MediaType.customBinary("application", "x-amz-json-1.1", Compressible))
-  lazy val formUrlEncoded = ContentType(MediaTypes.`application/x-www-form-urlencoded`, HttpCharset.custom("utf-8"))
+  lazy val formUrlEncoded = ContentType(MediaType.applicationWithFixedCharset("x-www-form-urlencoded", HttpCharset.custom("utf-8")))
   lazy val applicationXml = ContentType(MediaType.customBinary("application", "xml", Compressible))
 }
