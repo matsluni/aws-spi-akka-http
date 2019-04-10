@@ -40,8 +40,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext}
 
 class AkkaHttpClient(shutdownHandle: () => Unit)(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) extends SdkAsyncHttpClient {
-
-  val logger = LoggerFactory.getLogger(this.getClass)
+  import AkkaHttpClient._
 
   override def execute(request: AsyncExecuteRequest): CompletableFuture[Void] =
     new RunnableRequest(toAkkaRequest(request.request(), request.requestContentPublisher()), request.responseHandler()).run()
@@ -49,8 +48,13 @@ class AkkaHttpClient(shutdownHandle: () => Unit)(implicit actorSystem: ActorSyst
   override def close(): Unit = {
     shutdownHandle()
   }
+}
 
-  private def toAkkaRequest(request: SdkHttpRequest, contentPublisher: SdkHttpContentPublisher): HttpRequest = {
+object AkkaHttpClient {
+
+  val logger = LoggerFactory.getLogger(this.getClass)
+
+  private[akkahttpspi] def toAkkaRequest(request: SdkHttpRequest, contentPublisher: SdkHttpContentPublisher): HttpRequest = {
     val headers = convertHeaders(request.headers())
     val method = convertMethod(request.method().name())
     HttpRequest(
@@ -59,12 +63,12 @@ class AkkaHttpClient(shutdownHandle: () => Unit)(implicit actorSystem: ActorSyst
       headers  = filterContentTypeAndContentLengthHeader(headers),
       entity   = entityForMethodAndContentType(method, contentTypeHeaderToContentType(headers), contentPublisher),
       protocol = HttpProtocols.`HTTP/1.1`
-   )
+    )
   }
 
-  private def entityForMethodAndContentType(method: HttpMethod,
-                                            contentType: ContentType,
-                                            contentPublisher: SdkHttpContentPublisher): RequestEntity =
+  private[akkahttpspi] def entityForMethodAndContentType(method: HttpMethod,
+                                                         contentType: ContentType,
+                                                         contentPublisher: SdkHttpContentPublisher): RequestEntity =
     method.requestEntityAcceptance match {
       case Expected => contentPublisher.contentLength().asScala match {
         case Some(length) => HttpEntity(contentType, length, Source.fromPublisher(contentPublisher).map(ByteString(_)))
@@ -73,13 +77,13 @@ class AkkaHttpClient(shutdownHandle: () => Unit)(implicit actorSystem: ActorSyst
       case _ => HttpEntity.empty(Empty.contentType)
     }
 
-  private def convertMethod(method: String): HttpMethod = {
+  private[akkahttpspi] def convertMethod(method: String): HttpMethod =
     HttpMethods
       .getForKeyCaseInsensitive(method)
       .getOrElse(throw new IllegalArgumentException(s"Method not configured: ${method}"))
-  }
 
-  private def contentTypeHeaderToContentType(headers: List[HttpHeader]): ContentType = {
+
+  private[akkahttpspi] def contentTypeHeaderToContentType(headers: List[HttpHeader]): ContentType = {
     headers.find(_.lowercaseName() == "content-type").map(_.value()) match {
       case Some("application/x-amz-json-1.0") => AkkaHttpClient.xAmzJson
       case Some("application/x-amz-json-1.1") => AkkaHttpClient.xAmzJson11
@@ -91,7 +95,7 @@ class AkkaHttpClient(shutdownHandle: () => Unit)(implicit actorSystem: ActorSyst
     }
   }
 
-  private def convertHeaders(headers: java.util.Map[String, java.util.List[String]]): List[HttpHeader] = {
+  private[akkahttpspi] def convertHeaders(headers: java.util.Map[String, java.util.List[String]]): List[HttpHeader] = {
     headers.asScala.map { case (key, value) =>
       if (value.size() > 1 || value.size() == 0) throw new IllegalArgumentException(s"found invalid header: key: $key, Value: ${value.asScala.toList}")
       HttpHeader.parse(key, value.get(0)) match {
@@ -101,10 +105,10 @@ class AkkaHttpClient(shutdownHandle: () => Unit)(implicit actorSystem: ActorSyst
     }.toList
   }
 
-  private def filterContentTypeAndContentLengthHeader(headers: Seq[HttpHeader]): collection.immutable.Seq[HttpHeader] =
+  private[akkahttpspi] def filterContentTypeAndContentLengthHeader(headers: Seq[HttpHeader]): collection.immutable.Seq[HttpHeader] =
     headers.filterNot(h => h.lowercaseName() == "content-type" || h.lowercaseName() == "content-length").toList
 
-  private def tryCreateCustomContentType(contentTypeStr: String): ContentType = {
+  private[akkahttpspi] def tryCreateCustomContentType(contentTypeStr: String): ContentType = {
     logger.info(s"Try to parse content type from $contentTypeStr")
     val mainAndsubType = contentTypeStr.split('/')
     if (mainAndsubType.length == 2)
@@ -112,9 +116,7 @@ class AkkaHttpClient(shutdownHandle: () => Unit)(implicit actorSystem: ActorSyst
     else throw new RuntimeException(s"Could not parse custom content type '$contentTypeStr'.")
   }
 
-}
 
-object AkkaHttpClient {
   def builder() = AkkaHttpClientBuilder()
 
   case class AkkaHttpClientBuilder(private val actorSystem: Option[ActorSystem] = None,
