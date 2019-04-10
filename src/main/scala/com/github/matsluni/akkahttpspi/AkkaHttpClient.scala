@@ -138,6 +138,6 @@ object AkkaHttpClient {
 
   lazy val xAmzJson = ContentType(MediaType.customBinary("application", "x-amz-json-1.0", Compressible))
   lazy val xAmzJson11 = ContentType(MediaType.customBinary("application", "x-amz-json-1.1", Compressible))
-  lazy val formUrlEncoded = ContentType(MediaType.applicationWithFixedCharset("x-www-form-urlencoded", HttpCharset.custom("utf-8")))
+  lazy val formUrlEncoded = ContentType(MediaType.applicationWithOpenCharset("x-www-form-urlencoded"), HttpCharset.custom("utf-8"))
   lazy val applicationXml = ContentType(MediaType.customBinary("application", "xml", Compressible))
 }
