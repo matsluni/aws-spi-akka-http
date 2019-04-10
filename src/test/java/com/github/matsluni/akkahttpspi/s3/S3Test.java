@@ -16,28 +16,28 @@
 
 package com.github.matsluni.akkahttpspi.s3;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.net.URI;
-import java.security.SecureRandom;
-
-import org.junit.Ignore;
+import com.github.matsluni.akkahttpspi.AkkaHttpAsyncHttpService;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import org.testcontainers.containers.GenericContainer;
-import com.github.matsluni.akkahttpspi.AkkaHttpAsyncHttpService;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.net.URI;
+import java.security.SecureRandom;
+
+import static org.junit.Assert.assertEquals;
 
 public class S3Test extends JUnitSuite {
 
@@ -45,10 +45,9 @@ public class S3Test extends JUnitSuite {
   private static SecureRandom rnd = new SecureRandom();
 
   @Rule
-  public GenericContainer s3mock = new GenericContainer<>("findify/s3mock:0.2.4").withExposedPorts(8001);
+  public GenericContainer s3mock = new GenericContainer<>("adobe/s3mock:2.1.5").withExposedPorts(9090);
 
   @Test
-  @Ignore
   public void testS3() throws Exception {
     SdkAsyncHttpClient akkaClient = null;
     S3AsyncClient client = null;
@@ -58,8 +57,9 @@ public class S3Test extends JUnitSuite {
 
       client = S3AsyncClient
               .builder()
+              .serviceConfiguration(S3Configuration.builder().checksumValidationEnabled(false).build())
               .credentialsProvider(AnonymousCredentialsProvider.create())
-              .endpointOverride(new URI("http://localhost:8001"))
+              .endpointOverride(new URI("http://localhost:" + s3mock.getMappedPort(9090)))
               .region(Region.of("s3"))
               .httpClient(akkaClient)
               .build();
@@ -70,7 +70,7 @@ public class S3Test extends JUnitSuite {
       FileWriter fileWriter = new FileWriter(randomFile);
       fileWriter.write(fileContent);
       fileWriter.flush();
-      client.putObject(PutObjectRequest.builder().bucket("foo").key("my-file").build(), randomFile.toPath()).join();
+      client.putObject(PutObjectRequest.builder().bucket("foo").key("my-file").contentType("text/plain").build(), randomFile.toPath()).join();
 
       ResponseBytes result = client.getObject(GetObjectRequest.builder().bucket("foo").key("my-file").build(),
               AsyncResponseTransformer.toBytes()).join();

@@ -20,7 +20,7 @@ import java.io.{File, FileWriter}
 
 import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, TestBase}
 import org.scalatest.{Matchers, WordSpec}
-import software.amazon.awssdk.core.async.AsyncResponseTransformer
+import software.amazon.awssdk.core.async.{AsyncRequestBody, AsyncResponseTransformer}
 import software.amazon.awssdk.services.s3.{S3AsyncClient, S3Configuration}
 import software.amazon.awssdk.services.s3.model._
 
@@ -67,6 +67,34 @@ class ITTestS3 extends WordSpec with Matchers with TestBase {
 
       client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key("my-file").build()).join()
 
+      client.deleteBucket(DeleteBucketRequest.builder().bucket(bucketName).build()).join()
+    }
+
+    "multipart upload" in withClient { implicit client =>
+      val bucketName = "aws-spi-test-" + Random.alphanumeric.take(5).map(_.toLower).mkString
+      createBucket(bucketName)
+      val fileContent = (0 to 1000000).mkString
+      val createMultipartUploadResponse = client.createMultipartUpload(CreateMultipartUploadRequest.builder().bucket(bucketName).key("bar").contentType("text/plain").build()).join()
+
+      val p1 = client.uploadPart(UploadPartRequest.builder().bucket(bucketName).key("bar").partNumber(1).uploadId(createMultipartUploadResponse.uploadId()).build(), AsyncRequestBody.fromString(fileContent)).join
+      val p2 = client.uploadPart(UploadPartRequest.builder().bucket(bucketName).key("bar").partNumber(2).uploadId(createMultipartUploadResponse.uploadId()).build(), AsyncRequestBody.fromString(fileContent)).join
+
+      client.completeMultipartUpload(CompleteMultipartUploadRequest
+        .builder()
+        .bucket(bucketName)
+        .key("bar")
+        .uploadId(createMultipartUploadResponse.uploadId())
+        .multipartUpload(CompletedMultipartUpload
+          .builder()
+          .parts(CompletedPart.builder().partNumber(1).eTag(p1.eTag()).build(), CompletedPart.builder().partNumber(2).eTag(p2.eTag()).build())
+          .build())
+        .build()).join
+
+      val result = client.getObject(GetObjectRequest.builder().bucket(bucketName).key("bar").build(),
+        AsyncResponseTransformer.toBytes[GetObjectResponse]()).join
+      result.asUtf8String() should be(fileContent + fileContent)
+
+      client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key("bar").build()).join()
       client.deleteBucket(DeleteBucketRequest.builder().bucket(bucketName).build()).join()
     }
   }
