@@ -40,7 +40,7 @@ class RunnableRequest(httpRequest: HttpRequest, handler: SdkAsyncHttpResponseHan
       .singleRequest(httpRequest)
       .flatMap { response =>
         val sdkResponse = SdkHttpFullResponse.builder()
-            .headers(response.headers.groupBy(_.name()).map{ case (k, v) => k -> v.map(_.value()).asJava }.asJava)
+            .headers(response.headers.groupBy(_.name()).mapValues(_.map(_.value()).asJava).asJava)
             .statusCode(response.status.intValue())
             .statusText(response.status.reason)
             .build
