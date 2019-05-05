@@ -16,68 +16,51 @@
 
 package com.github.matsluni.akkahttpspi
 
-import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpRequest
 import akka.stream.Materializer
-import akka.stream.scaladsl.Sink
-import org.reactivestreams.{Publisher, Subscriber, Subscription}
+import akka.stream.scaladsl.{Keep, Sink}
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.http.SdkHttpFullResponse
 import software.amazon.awssdk.http.async.SdkAsyncHttpResponseHandler
 
 import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters
-import scala.concurrent.{ExecutionContext, Promise}
-import scala.util.Success
+import scala.concurrent.ExecutionContext
 
 class RunnableRequest(httpRequest: HttpRequest, handler: SdkAsyncHttpResponseHandler)(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) {
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
   def run(): CompletableFuture[Void] = {
-    val p = Promise[Void]()
-    Http().singleRequest(httpRequest).foreach { res =>
+    val result = Http()
+      .singleRequest(httpRequest)
+      .flatMap { response =>
+        val sdkResponse = SdkHttpFullResponse.builder()
+            .headers(response.headers.groupBy(_.name()).map{ case (k, v) => k -> v.map(_.value()).asJava }.asJava)
+            .statusCode(response.status.intValue())
+            .statusText(response.status.reason)
+            .build
 
-      val response = SdkHttpFullResponse.builder()
-        .headers(res.headers.groupBy(_.name()).map{ case (k, v) => k -> v.map(_.value()).asJava }.asJava)
-        .statusCode(res.status.intValue())
-        .statusText(res.status.reason)
-        .build
+        handler.onHeaders(sdkResponse)
 
-      handler.onHeaders(response)
+        val (complete, publisher) = response
+          .entity
+          .dataBytes
+          .map(_.asByteBuffer)
+          .alsoToMat(Sink.ignore)(Keep.right)
+          .toMat(Sink.asPublisher(fanout = false))(Keep.both)
+          .run()
 
-      val dataPublisher = res.entity.dataBytes.map(_.asByteBuffer).runWith(Sink.asPublisher(fanout = false))
-      handler.onStream(new PublisherDecorator(dataPublisher, p))
-    }
-    FutureConverters.toJava(p.future).toCompletableFuture
-  }
+        handler.onStream(publisher)
 
-  private class PublisherDecorator(protected val publisherDelegate: Publisher[ByteBuffer],
-                                   protected val resultPromise: Promise[Void]) extends Publisher[ByteBuffer] {
-
-    override def subscribe(s: Subscriber[_ >: ByteBuffer]): Unit =
-      publisherDelegate.subscribe(new SubscriberDecorator(s, resultPromise))
-
-    private class SubscriberDecorator(protected val subscriberDelegate: Subscriber[_ >: ByteBuffer],
-                                      protected val resultPromise: Promise[Void]) extends Subscriber[ByteBuffer] {
-
-      override def onSubscribe(s: Subscription): Unit = subscriberDelegate.onSubscribe(s)
-
-      override def onNext(t: ByteBuffer): Unit = subscriberDelegate.onNext(t)
-
-      override def onError(t: Throwable): Unit = {
-        subscriberDelegate.onError(t)
-        resultPromise.failure(t)
+        complete
       }
 
-      override def onComplete(): Unit = {
-        subscriberDelegate.onComplete()
-        resultPromise.complete(Success(null))
-      }
-    }
+    result.failed.foreach(handler.onError)
+    FutureConverters.toJava(result.map(_ => null: Void)).toCompletableFuture
   }
 }
