@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/matsluni/aws-spi-akka-http.svg?branch=master)](https://travis-ci.org/matsluni/aws-spi-akka-http) 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.matsluni/aws-spi-akka-http_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.matsluni/aws-spi-akka-http_2.12)
-[![License](http://img.shields.io/:license-Apache%202-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
+[![License](http://img.shields.io/:license-Apache%202-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt) [![Join the chat at https://gitter.im/aws-spi-akka-http/community](https://badges.gitter.im/aws-spi-akka-http/community.svg)](https://gitter.im/aws-spi-akka-http/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 This library implements the provided [SPI](https://en.wikipedia.org/wiki/Service_provider_interface) for the asynchronous 
 and non-blocking http calls in the new [AWS Java SDK](https://github.com/aws/aws-sdk-java-v2) with 
