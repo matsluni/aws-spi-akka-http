@@ -6,7 +6,7 @@ lazy val commonSettings = Seq(
     "-deprecation"),
   scalaVersion := "2.12.8",
   description := "An alternative non-blocking async http engine for aws-sdk-java-v2 based on akka-http",
-  crossScalaVersions := Seq("2.11.12", "2.12.8", "2.13.0-M5"),
+  crossScalaVersions := Seq("2.11.12", "2.12.8", "2.13.0"),
   organization := "com.github.matsluni",
   name := "aws-spi-akka-http",
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
@@ -51,7 +51,7 @@ lazy val root = (project in file("."))
 
 lazy val deps = {
   val awsSDKVersion = "2.5.37"
-  val akkaVersion = "2.5.21"
+  val akkaVersion = "2.5.23"
   val AkkaHttpVersion = "10.1.8"
 
   Seq(
@@ -64,12 +64,12 @@ lazy val deps = {
     "software.amazon.awssdk"  %  "sqs"                  % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
     "software.amazon.awssdk"  %  "sns"                  % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
 
-    "com.dimafeng"            %% "testcontainers-scala" % "0.24.0"        % "test",
+    "com.dimafeng"            %% "testcontainers-scala" % "0.26.0"        % "test",
 
     "junit"                   %  "junit"                % "4.12"          % "test",
 
     "org.scala-lang.modules"  %% "scala-java8-compat"   % "0.9.0"         % "it,test",
-    "org.scalatest"           %% "scalatest"            % "3.0.7"         % "it,test",
+    "org.scalatest"           %% "scalatest"            % "3.0.8"         % "it,test",
     "ch.qos.logback"          %  "logback-classic"      % "1.2.3"         % "it,test"
   )
 }
