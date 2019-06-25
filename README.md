@@ -44,7 +44,28 @@ val client = S3AsyncClient
 val eventualResponse = client.listBuckets()
 ```
 
-There also exists an [mini example project](https://github.com/matsluni/aws-spi-akka-http-example) in gradle which shows the usage.
+When you use this library and a specific AWS service (e.g. S3, SQS, etc...) you may want to exclude the transitive
+Netty dependency `netty-nio-client` like this:
+
+```scala
+libraryDependencies ++= Seq(
+  "software.amazon.awssdk" % "s3" % "2.5.60" exclude("software.amazon.awssdk", "netty-nio-client")
+)
+```
+
+If you not exclude the transitive dependency like shown above you have to explicitly declare which `httpClient` to use 
+in the service client instantiation. If no client is explicitly set and multiple implementations for the `SdkAsyncHttpClient`
+are found on the classpath, an exception like the following is thrown at runtime:
+
+```java
+software.amazon.awssdk.core.exception.SdkClientException: Multiple HTTP implementations were found on the classpath. 
+    To avoid non-deterministic loading implementations, please explicitly provide an HTTP client via the client builders, 
+    set the software.amazon.awssdk.http.async.service.impl system property with the FQCN of the HTTP service to use as the 
+    default, or remove all but one HTTP implementation from the classpath
+```
+
+There also exists an [mini example project](https://github.com/matsluni/aws-spi-akka-http-example) which shows the usage.
+This example uses gradle and also shows how to exclude the netty dependency.
 
 ## Running the tests in this repo
 
