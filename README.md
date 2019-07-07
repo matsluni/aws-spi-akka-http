@@ -64,6 +64,9 @@ software.amazon.awssdk.core.exception.SdkClientException: Multiple HTTP implemen
     default, or remove all but one HTTP implementation from the classpath
 ```
 
+To further reduce the classpath it is also optional possible to exclude `"software.amazon.awssdk", "apache-client"`. 
+This excludes an additional HttpClient, which comes as a transitive dependency with a AWS service.
+
 There also exists an [mini example project](https://github.com/matsluni/aws-spi-akka-http-example) which shows the usage.
 This example uses gradle and also shows how to exclude the netty dependency.
 
