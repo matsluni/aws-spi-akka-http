@@ -26,6 +26,7 @@ import akka.http.scaladsl.model.HttpHeader.ParsingResult.Ok
 import akka.http.scaladsl.model.MediaType.Compressible
 import akka.http.scaladsl.model.RequestEntityAcceptance.Expected
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.scaladsl.Source
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
@@ -39,11 +40,13 @@ import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext}
 
-class AkkaHttpClient(shutdownHandle: () => Unit)(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) extends SdkAsyncHttpClient {
+class AkkaHttpClient(shutdownHandle: () => Unit, connectionSettings: ConnectionPoolSettings)(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) extends SdkAsyncHttpClient {
   import AkkaHttpClient._
 
-  override def execute(request: AsyncExecuteRequest): CompletableFuture[Void] =
-    new RunnableRequest(toAkkaRequest(request.request(), request.requestContentPublisher()), request.responseHandler()).run()
+  override def execute(request: AsyncExecuteRequest): CompletableFuture[Void] = {
+    val akkaHttpRequest = toAkkaRequest(request.request(), request.requestContentPublisher())
+    new RunnableRequest(akkaHttpRequest, connectionSettings, request.responseHandler()).run()
+  }
 
   override def close(): Unit = {
     shutdownHandle()
@@ -80,7 +83,7 @@ object AkkaHttpClient {
   private[akkahttpspi] def convertMethod(method: String): HttpMethod =
     HttpMethods
       .getForKeyCaseInsensitive(method)
-      .getOrElse(throw new IllegalArgumentException(s"Method not configured: ${method}"))
+      .getOrElse(throw new IllegalArgumentException(s"Method not configured: $method"))
 
 
   private[akkahttpspi] def contentTypeHeaderToContentType(headers: List[HttpHeader]): ContentType = {
@@ -120,22 +123,25 @@ object AkkaHttpClient {
   def builder() = AkkaHttpClientBuilder()
 
   case class AkkaHttpClientBuilder(private val actorSystem: Option[ActorSystem] = None,
-                                   private val executionContext: Option[ExecutionContext] = None) extends SdkAsyncHttpClient.Builder[AkkaHttpClientBuilder] {
+                                   private val executionContext: Option[ExecutionContext] = None,
+                                   private val connectionPoolSettings: Option[ConnectionPoolSettings] = None) extends SdkAsyncHttpClient.Builder[AkkaHttpClientBuilder] {
     def buildWithDefaults(attributeMap: AttributeMap): SdkAsyncHttpClient = {
       implicit val as = actorSystem.getOrElse(ActorSystem("aws-akka-http"))
       implicit val ec = executionContext.getOrElse(as.dispatcher)
       val mat: ActorMaterializer = ActorMaterializer()
 
+      val cps = connectionPoolSettings.getOrElse(ConnectionPoolSettings(as))
       val shutdownhandleF = () => {
         if (actorSystem.isEmpty) {
           Await.result(Http().shutdownAllConnectionPools().flatMap(_ => as.terminate()), Duration.apply(10, TimeUnit.SECONDS))
           mat.shutdown()
         }
       }
-      new AkkaHttpClient(shutdownhandleF)(as, ec, mat)
+      new AkkaHttpClient(shutdownhandleF, cps)(as, ec, mat)
     }
     def withActorSystem(actorSystem: ActorSystem): AkkaHttpClientBuilder = copy(actorSystem = Some(actorSystem))
     def withExecutionContext(executionContext: ExecutionContext): AkkaHttpClientBuilder = copy(executionContext = Some(executionContext))
+    def withConnectionPoolSettings(connectionPoolSettings: ConnectionPoolSettings): AkkaHttpClientBuilder = copy(connectionPoolSettings = Some(connectionPoolSettings))
   }
 
   lazy val xAmzJson = ContentType(MediaType.customBinary("application", "x-amz-json-1.0", Compressible))
