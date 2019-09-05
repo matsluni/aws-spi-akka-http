@@ -44,7 +44,7 @@ val client = S3AsyncClient
 val eventualResponse = client.listBuckets()
 ```
 
-If you need to connect to some AWS service from internal Corporate, where is needed to configure a Proxy, it can be performed in the following way:
+If you connect to an AWS service from inside a corporate network, it may be necessary to configure a proxy. This can be achieved in the following way:
 
 ```scala
 val system = ActorSystem("aws-akka-http")
