@@ -47,6 +47,8 @@ val eventualResponse = client.listBuckets()
 If you need to connect to some AWS service from internal Corporate, where is needed to configure a Proxy, it can be performed in the following way:
 
 ```scala
+val system = ActorSystem("aws-akka-http")
+
 val proxyHost = "localhost"
 val proxyPort = 8888
 
@@ -59,7 +61,7 @@ val settings = ConnectionPoolSettings(system)
 lazy val akkaHttpClient = 
   AkkaHttpClient
     .builder()
-    .withActorSystem(actorSystem)
+    .withActorSystem(system)
     .withConnectionPoolSettings(settings)
     .build()
     
