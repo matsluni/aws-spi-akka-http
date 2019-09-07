@@ -40,6 +40,37 @@ val client = S3AsyncClient
               .region(Region.EU_CENTRAL_1)
               .httpClient(akkaClient)
               .build()
+
+val eventualResponse = client.listBuckets()
+```
+
+If you connect to an AWS service from inside a corporate network, it may be necessary to configure a proxy. This can be achieved in the following way:
+
+```scala
+val system = ActorSystem("aws-akka-http")
+
+val proxyHost = "localhost"
+val proxyPort = 8888
+
+val httpsProxyTransport = ClientTransport.httpsProxy(InetSocketAddress.createUnresolved(proxyHost, proxyPort))
+
+val settings = ConnectionPoolSettings(system)
+  .withConnectionSettings(ClientConnectionSettings(system)
+  .withTransport(httpsProxyTransport))
+
+lazy val akkaHttpClient = 
+  AkkaHttpClient
+    .builder()
+    .withActorSystem(system)
+    .withConnectionPoolSettings(settings)
+    .build()
+    
+val client = S3AsyncClient
+	.builder()
+	.credentialsProvider(ProfileCredentialsProvider.builder().build())
+	.region(Region.EU_CENTRAL_1)
+	.httpClient(akkaHttpClient)
+	.build()
               
 val eventualResponse = client.listBuckets()
 ```

@@ -21,6 +21,7 @@ import java.util.concurrent.CompletableFuture
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Keep, Sink}
 import org.slf4j.LoggerFactory
@@ -31,13 +32,13 @@ import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters
 import scala.concurrent.ExecutionContext
 
-class RunnableRequest(httpRequest: HttpRequest, handler: SdkAsyncHttpResponseHandler)(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) {
+class RunnableRequest(httpRequest: HttpRequest, connectionPoolSettings: ConnectionPoolSettings, handler: SdkAsyncHttpResponseHandler)(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) {
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
   def run(): CompletableFuture[Void] = {
     val result = Http()
-      .singleRequest(httpRequest)
+      .singleRequest(httpRequest, settings = connectionPoolSettings)
       .flatMap { response =>
         val sdkResponse = SdkHttpFullResponse.builder()
             .headers(response.headers.groupBy(_.name()).map{ case (k, v) => k -> v.map(_.value()).asJava }.asJava)
