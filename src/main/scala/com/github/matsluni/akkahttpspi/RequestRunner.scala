@@ -28,23 +28,25 @@ import org.slf4j.LoggerFactory
 import software.amazon.awssdk.http.SdkHttpFullResponse
 import software.amazon.awssdk.http.async.SdkAsyncHttpResponseHandler
 
-import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters
 import scala.concurrent.ExecutionContext
+import scala.collection.JavaConverters._
 
-class RunnableRequest(httpRequest: HttpRequest, connectionPoolSettings: ConnectionPoolSettings, handler: SdkAsyncHttpResponseHandler)(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) {
-
+class RequestRunner(connectionPoolSettings: ConnectionPoolSettings)(implicit sys: ActorSystem,
+                                                          ec: ExecutionContext,
+                                                          mat: Materializer) {
   val logger = LoggerFactory.getLogger(this.getClass)
 
-  def run(): CompletableFuture[Void] = {
+  def run(httpRequest: HttpRequest,
+          handler: SdkAsyncHttpResponseHandler): CompletableFuture[Void] = {
     val result = Http()
       .singleRequest(httpRequest, settings = connectionPoolSettings)
       .flatMap { response =>
         val sdkResponse = SdkHttpFullResponse.builder()
-            .headers(response.headers.groupBy(_.name()).map{ case (k, v) => k -> v.map(_.value()).asJava }.asJava)
-            .statusCode(response.status.intValue())
-            .statusText(response.status.reason)
-            .build
+          .headers(response.headers.groupBy(_.name()).map{ case (k, v) => k -> v.map(_.value()).asJava }.asJava)
+          .statusCode(response.status.intValue())
+          .statusText(response.status.reason)
+          .build
 
         handler.onHeaders(sdkResponse)
 
