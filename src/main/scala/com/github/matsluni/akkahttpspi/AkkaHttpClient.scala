@@ -43,9 +43,11 @@ import scala.concurrent.{Await, ExecutionContext}
 class AkkaHttpClient(shutdownHandle: () => Unit, connectionSettings: ConnectionPoolSettings)(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) extends SdkAsyncHttpClient {
   import AkkaHttpClient._
 
+  lazy val runner = new RequestRunner(connectionSettings)
+
   override def execute(request: AsyncExecuteRequest): CompletableFuture[Void] = {
     val akkaHttpRequest = toAkkaRequest(request.request(), request.requestContentPublisher())
-    new RunnableRequest(akkaHttpRequest, connectionSettings, request.responseHandler()).run()
+    runner.run(akkaHttpRequest, request.responseHandler())
   }
 
   override def close(): Unit = {
