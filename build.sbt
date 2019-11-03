@@ -50,8 +50,8 @@ lazy val root = (project in file("."))
 
 
 lazy val deps = {
-  val awsSDKVersion = "2.9.19"
-  val akkaVersion = "2.5.25"
+  val awsSDKVersion = "2.10.7"
+  val akkaVersion = "2.5.26"
   val AkkaHttpVersion = "10.1.10"
 
   Seq(
@@ -64,7 +64,7 @@ lazy val deps = {
     "software.amazon.awssdk"  %  "sqs"                  % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
     "software.amazon.awssdk"  %  "sns"                  % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
 
-    "com.dimafeng"            %% "testcontainers-scala" % "0.26.0"        % "test",
+    "com.dimafeng"            %% "testcontainers-scala" % "0.33.0"        % "test",
 
     "junit"                   %  "junit"                % "4.12"          % "test",
 
