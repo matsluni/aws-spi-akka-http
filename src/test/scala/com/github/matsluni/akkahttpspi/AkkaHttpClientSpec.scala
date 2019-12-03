@@ -18,9 +18,10 @@ package com.github.matsluni.akkahttpspi
 
 import akka.http.scaladsl.model.HttpHeader.ParsingResult.Ok
 import akka.http.scaladsl.model.{HttpHeader, MediaTypes}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class AkkaHttpClientSpec extends WordSpec with Matchers {
+class AkkaHttpClientSpec extends AnyWordSpec with Matchers {
 
   "AkkaHttpClient" should {
 
