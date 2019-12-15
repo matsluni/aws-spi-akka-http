@@ -12,7 +12,7 @@ cache:
   directories:
     - $HOME/.m2/repository
     - $HOME/.sbt
-    - $HOME/.ivy2
+    - $HOME/.cache/coursier/v1
 
 jdk:
   - openjdk8
@@ -23,4 +23,3 @@ script:
 
   # Tricks to avoid unnecessary cache updates
   - find $HOME/.sbt -name "*.lock" | xargs rm
-  - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
