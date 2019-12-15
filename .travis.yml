@@ -12,15 +12,14 @@ cache:
   directories:
     - $HOME/.m2/repository
     - $HOME/.sbt
-    - $HOME/.ivy2
+    - $HOME/.cache/coursier/v1
 
 jdk:
   - openjdk8
 
 script:
   ## This runs the template with the default parameters, and runs test within the templated app.
-  - sbt -Dfile.encoding=UTF8 -J-XX:ReservedCodeCacheSize=256M test
+  - sbt -Dfile.encoding=UTF8 -J-XX:ReservedCodeCacheSize=256M -Dsbt.color=true test
 
   # Tricks to avoid unnecessary cache updates
   - find $HOME/.sbt -name "*.lock" | xargs rm
-  - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
