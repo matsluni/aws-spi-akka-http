@@ -19,7 +19,7 @@ package com.github.matsluni.akkahttpspi.s3;
 import com.github.matsluni.akkahttpspi.AkkaHttpAsyncHttpService;
 import org.junit.Rule;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 import org.testcontainers.containers.GenericContainer;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.core.ResponseBytes;

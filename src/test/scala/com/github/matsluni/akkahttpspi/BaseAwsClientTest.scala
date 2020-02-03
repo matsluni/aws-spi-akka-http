@@ -21,14 +21,16 @@ import java.net.URI
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import com.github.matsluni.akkahttpspi.testcontainers.LocalStackReadyLogWaitStrategy
 import org.scalatest.concurrent.{Eventually, Futures, IntegrationPatience}
-import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfter
 import software.amazon.awssdk.core.SdkClient
 import software.amazon.awssdk.regions.Region
 
 import scala.util.Random
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 trait BaseAwsClientTest[C <: SdkClient]
-  extends WordSpec
+  extends AnyWordSpec
     with Matchers
     with Futures
     with Eventually
