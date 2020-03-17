@@ -8,10 +8,7 @@ This library implements the provided [SPI](https://en.wikipedia.org/wiki/Service
 and non-blocking http calls in the new [AWS Java SDK](https://github.com/aws/aws-sdk-java-v2) with 
 [Akka HTTP](https://github.com/akka/akka-http).
 
-This is a prototypical implementation to explore an alternative to netty as the build-in http engine in the aws sdk.
-
-This library is **not production ready** and early alpha. Use at your own risk. 
-Also, the underlying SPI is subject to change.
+This is an alternative implementation to the built-in netty-based async http engine in the aws sdk. Use at your own risk.
 
 ## Usage
 
