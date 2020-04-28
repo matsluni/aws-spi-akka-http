@@ -48,15 +48,28 @@ lazy val root = (project in file("."))
         "releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
   )
 
+/**
+ * Some terrible hacks to work around Cats's decision to have builds for
+ * different Scala versions depend on different versions of Discipline, etc.
+ */
+def priorTo2_12(scalaVersion: String): Boolean =
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, minor)) if minor < 12 => true
+    case _                              => false
+  }
+
+libraryDependencies += {
+  val AkkaHttpVersion = if (priorTo2_12(scalaVersion.value)) "10.1.10" else "10.2.0-M1"
+  "com.typesafe.akka"       %% "akka-http"            % AkkaHttpVersion withSources()
+}
 
 lazy val deps = {
   val awsSDKVersion = "2.11.4"
   val akkaVersion = "2.5.31"
-  val AkkaHttpVersion = "10.1.10"
+
 
   Seq(
     "com.typesafe.akka"       %% "akka-stream"          % akkaVersion     withSources(),
-    "com.typesafe.akka"       %% "akka-http"            % AkkaHttpVersion withSources(),
     "software.amazon.awssdk"  %  "http-client-spi"      % awsSDKVersion   withSources(),
 
     "software.amazon.awssdk"  %  "s3"                   % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
