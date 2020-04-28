@@ -19,7 +19,7 @@ package com.github.matsluni.akkahttpspi.s3;
 import com.github.matsluni.akkahttpspi.AkkaHttpAsyncHttpService;
 import org.junit.Rule;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 import org.testcontainers.containers.GenericContainer;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.core.ResponseBytes;
@@ -45,7 +45,7 @@ public class S3Test extends JUnitSuite {
   private static SecureRandom rnd = new SecureRandom();
 
   @Rule
-  public GenericContainer s3mock = new GenericContainer<>("adobe/s3mock:2.1.16").withExposedPorts(9090);
+  public GenericContainer s3mock = new GenericContainer<>("adobe/s3mock:2.1.19").withExposedPorts(9090);
 
   @Test
   public void testS3() throws Exception {

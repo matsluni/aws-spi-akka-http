@@ -4,9 +4,9 @@ lazy val commonSettings = Seq(
     "-encoding", "UTF-8",
     "-unchecked",
     "-deprecation"),
-  scalaVersion := "2.12.10",
+  scalaVersion := "2.12.11",
   description := "An alternative non-blocking async http engine for aws-sdk-java-v2 based on akka-http",
-  crossScalaVersions := Seq("2.11.12", "2.12.10", "2.13.1"),
+  crossScalaVersions := Seq("2.11.12", "2.12.11", "2.13.2"),
   organization := "com.github.matsluni",
   name := "aws-spi-akka-http",
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
@@ -50,9 +50,9 @@ lazy val root = (project in file("."))
 
 
 lazy val deps = {
-  val awsSDKVersion = "2.10.7"
-  val akkaVersion = "2.5.26"
-  val AkkaHttpVersion = "10.1.11"
+  val awsSDKVersion = "2.11.4"
+  val akkaVersion = "2.5.31"
+  val AkkaHttpVersion = "10.1.10"
 
   Seq(
     "com.typesafe.akka"       %% "akka-stream"          % akkaVersion     withSources(),
@@ -64,12 +64,13 @@ lazy val deps = {
     "software.amazon.awssdk"  %  "sqs"                  % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
     "software.amazon.awssdk"  %  "sns"                  % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
 
-    "com.dimafeng"            %% "testcontainers-scala" % "0.33.0"        % "test",
+    "com.dimafeng"            %% "testcontainers-scala" % "0.36.1"        % "test",
 
-    "junit"                   %  "junit"                % "4.12"          % "test",
+    "junit"                   %  "junit"                % "4.13"          % "test",
 
-    "org.scala-lang.modules"  %% "scala-java8-compat"   % "0.9.0"         % "it,test",
-    "org.scalatest"           %% "scalatest"            % "3.0.8"         % "it,test",
+    "org.scala-lang.modules"  %% "scala-java8-compat"   % "0.9.1"         % "it,test",
+    "org.scalatest"           %% "scalatest"            % "3.1.1"         % "it,test",
+    "org.scalatestplus"       %% "scalatestplus-junit"  % "1.0.0-M2"      % "it,test",
     "ch.qos.logback"          %  "logback-classic"      % "1.2.3"         % "it,test"
   )
 }
