@@ -92,6 +92,7 @@ object AkkaHttpClient {
     headers.find(_.lowercaseName() == "content-type").map(_.value()) match {
       case Some("application/x-amz-json-1.0") => AkkaHttpClient.xAmzJson
       case Some("application/x-amz-json-1.1") => AkkaHttpClient.xAmzJson11
+      case Some("application/x-amz-cbor-1.1") => AkkaHttpClient.xAmzCbor11 // used by Kinesis
       case Some("application/x-www-form-urlencoded; charset=UTF-8") => AkkaHttpClient.formUrlEncoded
       case Some("application/x-www-form-urlencoded") => AkkaHttpClient.formUrlEncoded
       case Some("application/xml") => AkkaHttpClient.applicationXml
@@ -114,7 +115,7 @@ object AkkaHttpClient {
     headers.filterNot(h => h.lowercaseName() == "content-type" || h.lowercaseName() == "content-length").toList
 
   private[akkahttpspi] def tryCreateCustomContentType(contentTypeStr: String): ContentType = {
-    logger.info(s"Try to parse content type from $contentTypeStr")
+    logger.debug(s"Try to parse content type from $contentTypeStr")
     val mainAndsubType = contentTypeStr.split('/')
     if (mainAndsubType.length == 2)
       ContentType(MediaType.customBinary(mainAndsubType(0), mainAndsubType(1), Compressible))
@@ -148,6 +149,7 @@ object AkkaHttpClient {
 
   lazy val xAmzJson = ContentType(MediaType.customBinary("application", "x-amz-json-1.0", Compressible))
   lazy val xAmzJson11 = ContentType(MediaType.customBinary("application", "x-amz-json-1.1", Compressible))
+  lazy val xAmzCbor11 = ContentType(MediaType.customBinary("application", "x-amz-cbor-1.1", Compressible))
   lazy val formUrlEncoded = ContentType(MediaType.applicationWithOpenCharset("x-www-form-urlencoded"), HttpCharset.custom("utf-8"))
   lazy val applicationXml = ContentType(MediaType.customBinary("application", "xml", Compressible))
 }
