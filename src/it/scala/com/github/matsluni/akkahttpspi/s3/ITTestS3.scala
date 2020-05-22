@@ -19,14 +19,15 @@ package com.github.matsluni.akkahttpspi.s3
 import java.io.{File, FileWriter}
 
 import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, TestBase}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 import software.amazon.awssdk.core.async.{AsyncRequestBody, AsyncResponseTransformer}
 import software.amazon.awssdk.services.s3.{S3AsyncClient, S3Configuration}
 import software.amazon.awssdk.services.s3.model._
 
 import scala.util.Random
 
-class ITTestS3 extends WordSpec with Matchers with TestBase {
+class ITTestS3 extends AnyWordSpec with Matchers with TestBase {
 
   def withClient(testCode: S3AsyncClient => Any): Any = {
 

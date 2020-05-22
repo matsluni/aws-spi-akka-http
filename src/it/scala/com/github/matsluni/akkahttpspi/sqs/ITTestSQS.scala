@@ -17,13 +17,14 @@
 package com.github.matsluni.akkahttpspi.sqs
 
 import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, TestBase}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, DeleteQueueRequest, ReceiveMessageRequest, SendMessageRequest}
 
 import scala.util.Random
 
-class ITTestSQS extends WordSpec with Matchers with TestBase {
+class ITTestSQS extends AnyWordSpec with Matchers with TestBase {
 
   def withClient(testCode: SqsAsyncClient => Any): Any = {
 

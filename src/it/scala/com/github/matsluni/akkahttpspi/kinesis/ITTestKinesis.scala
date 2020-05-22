@@ -19,14 +19,13 @@ package com.github.matsluni.akkahttpspi.kinesis
 import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, TestBase}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.concurrent.{Eventually, Futures, IntegrationPatience}
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient
 import software.amazon.awssdk.services.kinesis.model._
 
 import scala.util.Random
 
-class ITTestKinesis extends AnyWordSpec with Matchers with Futures with Eventually with IntegrationPatience with TestBase {
+class ITTestKinesis extends AnyWordSpec with Matchers with TestBase {
 
   def withClient(testCode: KinesisAsyncClient => Any): Any = {
 
