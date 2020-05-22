@@ -14,7 +14,7 @@ This is an alternative implementation to the built-in netty-based async http eng
 
 Create a dependency to this library by adding the following to your `build.sbt`:
 
-    "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.8"
+    "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.9"
     
 or for Maven, the following to `pom.xml`:
 
@@ -22,7 +22,7 @@ or for Maven, the following to `pom.xml`:
 <dependency>
     <groupId>com.github.matsluni</groupId>
     <artifactId>aws-spi-akka-http_2.12</artifactId>
-    <version>0.0.8</version>
+    <version>0.0.9</version>
 </dependency>
 ```
 
