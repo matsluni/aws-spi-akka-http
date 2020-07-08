@@ -65,7 +65,7 @@ lazy val deps = {
     "software.amazon.awssdk"  %  "sns"                  % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
     "software.amazon.awssdk"  %  "kinesis"              % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
 
-    "com.dimafeng"            %% "testcontainers-scala" % "0.37.0"        % "test",
+    "com.dimafeng"            %% "testcontainers-scala" % "0.38.0"        % "test",
 
     "junit"                   %  "junit"                % "4.13"          % "test",
 
