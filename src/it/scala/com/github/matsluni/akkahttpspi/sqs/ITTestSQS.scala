@@ -60,7 +60,7 @@ class ITTestSQS extends AnyWordSpec with Matchers with TestBase {
       client.deleteQueue(DeleteQueueRequest.builder().queueUrl(queueUrl).build()).join()
 
       val queueListing = client.listQueues().join()
-      queueListing.queueUrls() should be ('empty)
+      queueListing.queueUrls() shouldBe java.util.Collections.EMPTY_LIST
 
     }
   }

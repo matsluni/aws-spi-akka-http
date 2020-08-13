@@ -30,7 +30,7 @@ import software.amazon.awssdk.http.async.SdkAsyncHttpResponseHandler
 
 import scala.compat.java8.FutureConverters
 import scala.concurrent.ExecutionContext
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class RequestRunner(connectionPoolSettings: ConnectionPoolSettings)(implicit sys: ActorSystem,
                                                           ec: ExecutionContext,
