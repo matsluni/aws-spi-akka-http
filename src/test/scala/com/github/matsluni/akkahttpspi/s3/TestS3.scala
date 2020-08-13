@@ -26,7 +26,7 @@ import software.amazon.awssdk.core.async.{AsyncRequestBody, AsyncResponseTransfo
 import software.amazon.awssdk.services.s3.{S3AsyncClient, S3Configuration}
 import software.amazon.awssdk.services.s3.model._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Random
@@ -103,7 +103,7 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
   override def exposedServicePort: Int = 9090
 
   override lazy val container: GenericContainer = new GenericContainer(
-    dockerImage = "adobe/s3mock:2.1.19",
+    dockerImage = "adobe/s3mock:2.1.24",
     exposedPorts = Seq(exposedServicePort),
     waitStrategy = Some(TimeoutWaitStrategy(10 seconds))
   )

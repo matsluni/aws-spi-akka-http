@@ -16,7 +16,7 @@
 
 package com.github.matsluni.akkahttpspi.sqs
 
-import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, BaseAwsClientTest, LocalstackBaseAwsClientTest}
+import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, LocalstackBaseAwsClientTest}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
@@ -40,7 +40,7 @@ class TestSQS extends LocalstackBaseAwsClientTest[SqsAsyncClient] {
       client.deleteMessage(DeleteMessageRequest.builder().queueUrl(s"$endpoint/queue/foo").receiptHandle(receivedMessages.messages().get(0).receiptHandle()).build()).join()
 
       val receivedMessage = client.receiveMessage(ReceiveMessageRequest.builder().queueUrl(s"$endpoint/queue/foo").maxNumberOfMessages(1).waitTimeSeconds(1).build()).join()
-      receivedMessage.messages() should be('empty)
+      receivedMessage.messages() shouldBe java.util.Collections.EMPTY_LIST
     }
 
   }
