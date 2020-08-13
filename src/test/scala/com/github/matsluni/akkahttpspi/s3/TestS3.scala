@@ -34,14 +34,14 @@ import scala.util.Random
 class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
 
   "Async S3 client" should {
-    "create bucket" in {
+    "create bucket" in withClient { implicit client =>
       val bucketName = createBucket()
       val buckets = client.listBuckets().join
       buckets.buckets() should have size (1)
       buckets.buckets().asScala.toList.head.name() should be(bucketName)
     }
 
-    "upload and download a file to a bucket" in {
+    "upload and download a file to a bucket" in withClient { implicit client =>
       val bucketName = createBucket()
       val fileContent = 0 to 1000 mkString
 
@@ -53,7 +53,7 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
       result.asUtf8String() should be(fileContent)
     }
 
-    "multipart upload" ignore {
+    "multipart upload" ignore withClient { implicit client =>
       val bucketName = createBucket()
       val randomFile = File.createTempFile("aws1", Random.alphanumeric.take(5).mkString)
       val fileContent = Random.alphanumeric.take(1000).mkString
@@ -83,21 +83,32 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
 
   }
 
-  def createBucket(): String = {
+  def createBucket()(implicit client: S3AsyncClient): String = {
     val bucketName = Random.alphanumeric.take(7).map(_.toLower).mkString
     client.createBucket(CreateBucketRequest.builder().bucket(bucketName).build()).join
     bucketName
   }
 
-  override def client: S3AsyncClient = {
-    S3AsyncClient
+  private def withClient(testCode: S3AsyncClient => Any): Any = {
+
+    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
+
+    val client = S3AsyncClient
       .builder()
       .serviceConfiguration(S3Configuration.builder().checksumValidationEnabled(false).build())
-      .region(defaultRegion)
       .credentialsProvider(AnonymousCredentialsProvider.create)
       .endpointOverride(endpoint)
-      .httpClient(new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build())
+      .httpClient(akkaClient)
+      .region(defaultRegion)
       .build()
+
+    try {
+      testCode(client)
+    }
+    finally { // clean up
+      akkaClient.close()
+      client.close()
+    }
   }
 
   override def exposedServicePort: Int = 9090

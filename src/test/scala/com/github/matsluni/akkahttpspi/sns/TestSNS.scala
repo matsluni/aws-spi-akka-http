@@ -16,14 +16,15 @@
 
 package com.github.matsluni.akkahttpspi.sns
 
-import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, BaseAwsClientTest, LocalstackBaseAwsClientTest}
+import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, LocalstackBaseAwsClientTest}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.{CreateTopicRequest, PublishRequest}
 
 class TestSNS extends LocalstackBaseAwsClientTest[SnsAsyncClient] {
+
   "Async SNS client" should {
-    "publish a message to a topic" in {
+    "publish a message to a topic" in withClient { implicit client =>
       val arn = client.createTopic(CreateTopicRequest.builder().name("topic-example").build()).join().topicArn()
       val result = client.publish(PublishRequest.builder().message("a message").topicArn(arn).build()).join()
 
@@ -31,13 +32,26 @@ class TestSNS extends LocalstackBaseAwsClientTest[SnsAsyncClient] {
     }
   }
 
-  override def service: String = "sns"
+  def withClient(testCode: SnsAsyncClient => Any): Any = {
 
-  override def client: SnsAsyncClient = SnsAsyncClient
-    .builder()
-    .region(defaultRegion)
-    .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
-    .endpointOverride(endpoint)
-    .httpClient(new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build())
-    .build()
+    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
+
+    val client = SnsAsyncClient
+      .builder()
+      .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
+      .httpClient(akkaClient)
+      .region(defaultRegion)
+      .endpointOverride(endpoint)
+      .build()
+
+    try {
+      testCode(client)
+    }
+    finally { // clean up
+      akkaClient.close()
+      client.close()
+    }
+  }
+
+  override def service: String = "sns"
 }
