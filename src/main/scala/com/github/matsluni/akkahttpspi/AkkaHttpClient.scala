@@ -35,7 +35,7 @@ import software.amazon.awssdk.http.async._
 import software.amazon.awssdk.http.SdkHttpRequest
 import software.amazon.awssdk.utils.AttributeMap
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext}

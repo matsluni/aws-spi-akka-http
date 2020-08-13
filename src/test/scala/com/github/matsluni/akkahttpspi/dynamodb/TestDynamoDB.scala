@@ -21,7 +21,7 @@ import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCrede
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.awssdk.services.dynamodb.model._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class TestDynamoDB extends LocalstackBaseAwsClientTest[DynamoDbAsyncClient] {
   "DynamoDB" should {
