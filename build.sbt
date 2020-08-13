@@ -5,9 +5,9 @@ lazy val commonSettings = Seq(
     "-unchecked",
     "-deprecation"),
   scalacOptions ++= { if (isDotty.value) Seq("-language:Scala2") else Nil },
-  scalaVersion := "2.12.10",
+  scalaVersion := dottyLatestNightlyBuild.get,
   description := "An alternative non-blocking async http engine for aws-sdk-java-v2 based on akka-http",
-  crossScalaVersions := Seq("2.11.12", "2.12.10", "2.13.1", "0.21.0-RC1"),
+  crossScalaVersions := Seq("2.11.12", "2.12.10", "2.13.1", "0.26.0-RC1"),
   organization := "com.github.matsluni",
   name := "aws-spi-akka-http",
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
@@ -70,7 +70,7 @@ lazy val deps = {
     "junit"                   %  "junit"                % "4.12"          % "test",
 
     "org.scala-lang.modules"  %% "scala-java8-compat"   % "0.9.0"         % "it,test",
-    "org.scalatest"           %% "scalatest"            % "3.1.0"         % "it,test",
+    "org.scalatest"           %% "scalatest"            % "3.2.0"         % "it,test",
     "org.scalatestplus"       %% "scalatestplus-junit"  % "1.0.0-M2"      % "it,test",
     "ch.qos.logback"          %  "logback-classic"      % "1.2.3"         % "it,test"
   )
