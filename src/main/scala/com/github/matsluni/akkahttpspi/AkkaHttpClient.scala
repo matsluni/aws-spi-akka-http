@@ -20,7 +20,6 @@ import java.util.concurrent.{CompletableFuture, TimeUnit}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.HttpEntity.Empty
 import akka.http.scaladsl.model.HttpHeader.ParsingResult
 import akka.http.scaladsl.model.HttpHeader.ParsingResult.Ok
 import akka.http.scaladsl.model.MediaType.Compressible
@@ -79,7 +78,7 @@ object AkkaHttpClient {
         case Some(length) => HttpEntity(contentType, length, Source.fromPublisher(contentPublisher).map(ByteString(_)))
         case None         => HttpEntity(contentType, Source.fromPublisher(contentPublisher).map(ByteString(_)))
       }
-      case _ => HttpEntity.empty(Empty.contentType)
+      case _ => HttpEntity.Empty
     }
 
   private[akkahttpspi] def convertMethod(method: String): HttpMethod =
@@ -97,7 +96,14 @@ object AkkaHttpClient {
       case Some("application/x-www-form-urlencoded") => AkkaHttpClient.formUrlEncoded
       case Some("application/xml") => AkkaHttpClient.applicationXml
       case Some(s) => tryCreateCustomContentType(s)
-      case None => AkkaHttpClient.formUrlEncoded
+      // Its allowed to not have a content-type: https://www.w3.org/Protocols/rfc2616/rfc2616-sec7.html#sec7.2.1
+      //
+      //  Any HTTP/1.1 message containing an entity-body SHOULD include a Content-Type header field defining the media type
+      //  of that body. If and only if the media type is not given by a Content-Type field, the recipient MAY attempt to
+      //  guess the media type via inspection of its content and/or the name extension(s) of the URI used to identify the
+      //  resource. If the media type remains unknown, the recipient SHOULD treat it as type "application/octet-stream".
+      //
+      case None => ContentTypes.NoContentType
     }
   }
 
