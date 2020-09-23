@@ -16,12 +16,15 @@
 
 package com.github.matsluni.akkahttpspi
 
-import akka.http.scaladsl.model.HttpHeader.ParsingResult.Ok
-import akka.http.scaladsl.model.{HttpHeader, MediaTypes}
+import akka.http.scaladsl.model.headers.`Content-Type`
+import akka.http.scaladsl.model.MediaTypes
+import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class AkkaHttpClientSpec extends AnyWordSpec with Matchers {
+import scala.jdk.CollectionConverters._
+
+class AkkaHttpClientSpec extends AnyWordSpec with Matchers with OptionValues {
 
   "AkkaHttpClient" should {
 
@@ -31,15 +34,17 @@ class AkkaHttpClientSpec extends AnyWordSpec with Matchers {
       contentType.mediaType should be (MediaTypes.`application/xml`)
     }
 
-    "remove 'ContentType' and 'ContentLength' header from headers" in {
-      val Ok(contentType, pErr1) = HttpHeader.parse("Content-Type", "application/xml")
-      val Ok(contentLength, pErr2) = HttpHeader.parse("Content-Length", "123")
+    "remove 'ContentType' return 'ContentLength' separate from sdk headers" in {
+      val headers = collection.immutable.Map(
+        "Content-Type" -> List("application/xml").asJava,
+        "Content-Length"-> List("123").asJava,
+        "Accept" -> List("*/*").asJava
+      ).asJava
 
-      val filteredHeaders = AkkaHttpClient.filterContentTypeAndContentLengthHeader(contentType :: contentLength :: Nil)
+      val (contentTypeHeader, reqHeaders) = AkkaHttpClient.convertHeaders(headers)
 
-      pErr1 should have size 0
-      pErr2 should have size 0
-      filteredHeaders should have size 0
+      contentTypeHeader.value.lowercaseName() shouldBe `Content-Type`.lowercaseName
+      reqHeaders should have size 1
     }
   }
 }
