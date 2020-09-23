@@ -54,6 +54,8 @@ class AkkaHttpClient(shutdownHandle: () => Unit, connectionSettings: ConnectionP
   override def close(): Unit = {
     shutdownHandle()
   }
+
+  override def clientName(): String = "akka-http"
 }
 
 object AkkaHttpClient {
