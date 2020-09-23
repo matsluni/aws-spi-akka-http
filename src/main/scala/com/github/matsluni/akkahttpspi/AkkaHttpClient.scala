@@ -106,8 +106,8 @@ object AkkaHttpClient {
   private[akkahttpspi] def convertHeaders(headers: java.util.Map[String, java.util.List[String]]): (Option[HttpHeader], immutable.Seq[HttpHeader]) =
     headers.asScala.foldLeft((Option.empty[HttpHeader], List.empty[HttpHeader])) { case ((ctHeader, hdrs), header) =>
       val (headerName, headerValue) = header
-      if (headerValue.size() > 1 || headerValue.size() == 0) {
-        throw new IllegalArgumentException(s"found invalid header: key: $headerName, Value: ${headerValue.asScala.toList}")
+      if (headerValue.size() != 1) {
+        throw new IllegalArgumentException(s"Found invalid header: key: $headerName, Value: ${headerValue.asScala.toList}.")
       }
       // skip content-length as it will be calculated by akka-http itself and must not be provided in the request headers
       if (`Content-Length`.lowercaseName == headerName.toLowerCase) (ctHeader, hdrs)
@@ -117,7 +117,7 @@ object AkkaHttpClient {
             // return content-type separately as it will be used to calculate ContentType, which is used on HttpEntity
             if (ok.header.lowercaseName() == `Content-Type`.lowercaseName) (Some(ok.header), hdrs)
             else (ctHeader, (hdrs :+ ok.header))
-          case error: ParsingResult.Error => throw new IllegalArgumentException(s"found invalid header: ${error.errors}")
+          case error: ParsingResult.Error => throw new IllegalArgumentException(s"Found invalid header: ${error.errors}.")
         }
       }
     }
