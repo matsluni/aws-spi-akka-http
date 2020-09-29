@@ -18,7 +18,7 @@ package com.github.matsluni.akkahttpspi
 
 import java.util.concurrent.{CompletableFuture, TimeUnit}
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpEntity.Empty
 import akka.http.scaladsl.model.HttpHeader.ParsingResult
@@ -28,7 +28,7 @@ import akka.http.scaladsl.model.RequestEntityAcceptance.Expected
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.scaladsl.Source
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.{ActorMaterializer, Materializer, SystemMaterializer}
 import akka.util.ByteString
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.http.async._
@@ -131,18 +131,19 @@ object AkkaHttpClient {
     def buildWithDefaults(attributeMap: AttributeMap): SdkAsyncHttpClient = {
       implicit val as = actorSystem.getOrElse(ActorSystem("aws-akka-http"))
       implicit val ec = executionContext.getOrElse(as.dispatcher)
-      val mat: ActorMaterializer = ActorMaterializer()
+      val mat: Materializer = SystemMaterializer(as).materializer
 
       val cps = connectionPoolSettings.getOrElse(ConnectionPoolSettings(as))
       val shutdownhandleF = () => {
         if (actorSystem.isEmpty) {
           Await.result(Http().shutdownAllConnectionPools().flatMap(_ => as.terminate()), Duration.apply(10, TimeUnit.SECONDS))
-          mat.shutdown()
         }
+        ()
       }
       new AkkaHttpClient(shutdownhandleF, cps)(as, ec, mat)
     }
     def withActorSystem(actorSystem: ActorSystem): AkkaHttpClientBuilder = copy(actorSystem = Some(actorSystem))
+    def withActorSystem(actorSystem: ClassicActorSystemProvider): AkkaHttpClientBuilder = copy(actorSystem = Some(actorSystem.classicSystem))
     def withExecutionContext(executionContext: ExecutionContext): AkkaHttpClientBuilder = copy(executionContext = Some(executionContext))
     def withConnectionPoolSettings(connectionPoolSettings: ConnectionPoolSettings): AkkaHttpClientBuilder = copy(connectionPoolSettings = Some(connectionPoolSettings))
   }
