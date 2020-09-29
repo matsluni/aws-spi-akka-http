@@ -67,7 +67,7 @@ public class S3Test extends JUnitSuite {
               .httpClient(akkaClient)
               .build();
 
-      createBuckentAndAssert(client);
+      createBucketAndAssert(client);
     } finally {
       akkaClient.close();
       client.close();
@@ -92,7 +92,7 @@ public class S3Test extends JUnitSuite {
               .httpClient(akkaClient)
               .build();
 
-      createBuckentAndAssert(client);
+      createBucketAndAssert(client);
     } finally {
       akkaClient.close();
       client.close();
@@ -101,7 +101,7 @@ public class S3Test extends JUnitSuite {
     }
   }
 
-  private void createBuckentAndAssert(S3AsyncClient client) throws IOException {
+  private void createBucketAndAssert(S3AsyncClient client) throws IOException {
     client.createBucket(CreateBucketRequest.builder().bucket("foo").build()).join();
     File randomFile = File.createTempFile("aws1", randomString(5));
     String fileContent = randomString(1000);
