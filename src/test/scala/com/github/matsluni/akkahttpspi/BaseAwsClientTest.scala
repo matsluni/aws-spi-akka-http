@@ -64,9 +64,9 @@ trait LocalstackBaseAwsClientTest[C <: SdkClient] extends BaseAwsClientTest[C] {
 object LocalstackServicePorts {
   //services and ports based on https://github.com/localstack/localstack
   val services: Map[String, Int] = Map(
-    "s3" -> 4572,
-    "sqs" -> 4576,
-    "sns" -> 4575,
-    "dynamodb" -> 4569
+    "s3" -> 4566,
+    "sqs" -> 4566,
+    "sns" -> 4566,
+    "dynamodb" -> 4566
   )
 }
