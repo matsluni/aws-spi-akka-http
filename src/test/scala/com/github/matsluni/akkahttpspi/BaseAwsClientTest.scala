@@ -50,7 +50,7 @@ trait BaseAwsClientTest[C <: SdkClient]
 trait LocalstackBaseAwsClientTest[C <: SdkClient] extends BaseAwsClientTest[C] {
   def service: String
 
-  lazy val exposedServicePort: Int = LocalstackServicePorts.services(service)
+  lazy val exposedServicePort: Int = 4566
 
   override lazy val container: GenericContainer =
     new GenericContainer(
