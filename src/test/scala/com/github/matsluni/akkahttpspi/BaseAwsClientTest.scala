@@ -60,13 +60,3 @@ trait LocalstackBaseAwsClientTest[C <: SdkClient] extends BaseAwsClientTest[C] {
       waitStrategy = Some(LocalStackReadyLogWaitStrategy)
     )
 }
-
-object LocalstackServicePorts {
-  //services and ports based on https://github.com/localstack/localstack
-  val services: Map[String, Int] = Map(
-    "s3" -> 4566,
-    "sqs" -> 4566,
-    "sns" -> 4566,
-    "dynamodb" -> 4566
-  )
-}
