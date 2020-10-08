@@ -50,7 +50,7 @@ trait BaseAwsClientTest[C <: SdkClient]
 trait LocalstackBaseAwsClientTest[C <: SdkClient] extends BaseAwsClientTest[C] {
   def service: String
 
-  lazy val exposedServicePort: Int = LocalstackServicePorts.services(service)
+  lazy val exposedServicePort: Int = 4566
 
   override lazy val container: GenericContainer =
     new GenericContainer(
@@ -59,14 +59,4 @@ trait LocalstackBaseAwsClientTest[C <: SdkClient] extends BaseAwsClientTest[C] {
       env = Map("SERVICES" -> service),
       waitStrategy = Some(LocalStackReadyLogWaitStrategy)
     )
-}
-
-object LocalstackServicePorts {
-  //services and ports based on https://github.com/localstack/localstack
-  val services: Map[String, Int] = Map(
-    "s3" -> 4566,
-    "sqs" -> 4566,
-    "sns" -> 4566,
-    "dynamodb" -> 4566
-  )
 }
