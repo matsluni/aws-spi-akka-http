@@ -68,7 +68,7 @@ lazy val deps = {
 
     "com.dimafeng"            %% "testcontainers-scala"    % "0.38.4"        % "test",
 
-    "junit"                   %  "junit"                   % "4.13"          % "test",
+    "junit"                   %  "junit"                   % "4.13.1"          % "test",
 
     "org.scala-lang.modules"  %% "scala-java8-compat"      % "0.9.1"         % "it,test",
     "org.scalatest"           %% "scalatest"               % "3.2.2"         % "it,test",
