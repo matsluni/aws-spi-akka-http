@@ -20,7 +20,8 @@ import java.util.concurrent.CompletableFuture
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.{ContentTypes, HttpRequest}
+import akka.http.scaladsl.model.headers.{`Content-Length`, `Content-Type`}
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Keep, Sink}
@@ -42,8 +43,19 @@ class RequestRunner(connectionPoolSettings: ConnectionPoolSettings)(implicit sys
     val result = Http()
       .singleRequest(httpRequest, settings = connectionPoolSettings)
       .flatMap { response =>
+
+       val contentType = response.entity.contentType match {
+         case ContentTypes.NoContentType => Map.empty[String, java.util.List[String]]
+         case contentType => Map(`Content-Type`.name -> List(contentType.value).asJava)
+       }
+
+        val contentLength = response.entity.contentLengthOption
+          .map(length => `Content-Length`.name -> List(length.toString).asJava).toMap
+
+        val headers = response.headers.groupBy(_.name()).map { case (k, v) => k -> v.map(_.value()).asJava }
+
         val sdkResponse = SdkHttpFullResponse.builder()
-          .headers(response.headers.groupBy(_.name()).map{ case (k, v) => k -> v.map(_.value()).asJava }.asJava)
+          .headers((headers ++ contentType ++ contentLength).asJava)
           .statusCode(response.status.intValue())
           .statusText(response.status.reason)
           .build
