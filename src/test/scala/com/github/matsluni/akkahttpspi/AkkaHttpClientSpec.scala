@@ -16,8 +16,9 @@
 
 package com.github.matsluni.akkahttpspi
 
-import akka.http.scaladsl.model.headers.`Content-Type`
-import akka.http.scaladsl.model.MediaTypes
+import akka.http.scaladsl.model.headers.{Accept, `Content-Type`}
+import akka.http.scaladsl.model._
+import akka.util.ByteString
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -45,6 +46,22 @@ class AkkaHttpClientSpec extends AnyWordSpec with Matchers with OptionValues {
 
       contentTypeHeader.value.lowercaseName() shouldBe `Content-Type`.lowercaseName
       reqHeaders should have size 1
+    }
+
+    "put 'ContentType' and 'ContentLength' into SdkResponse" in {
+      val sdkResponseHeaders = collection.immutable.Map(
+        "Content-Type" -> List("application/json"),
+        "Content-Length"-> List("1"),
+        "Accept" -> List("*/*")
+      ).toList
+
+      val akkaHttpResponse = HttpResponse(
+        headers = collection.immutable.Seq(`Accept`(MediaRanges.`*/*`)),
+        entity = HttpEntity.Strict(ContentTypes.`application/json`, ByteString("1"))
+      )
+      val resultHeaders =  AkkaHttpClient.convertToSdkResponseHeaders(akkaHttpResponse)
+
+      resultHeaders.toList should contain theSameElementsAs sdkResponseHeaders
     }
   }
 }
