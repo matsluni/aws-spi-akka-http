@@ -32,7 +32,7 @@ import akka.stream.{ActorMaterializer, Materializer, SystemMaterializer}
 import akka.util.ByteString
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.http.async._
-import software.amazon.awssdk.http.{SdkHttpFullResponse, SdkHttpRequest}
+import software.amazon.awssdk.http.SdkHttpRequest
 import software.amazon.awssdk.utils.AttributeMap
 
 import scala.collection.immutable
@@ -44,11 +44,14 @@ import scala.concurrent.{Await, ExecutionContext}
 class AkkaHttpClient(shutdownHandle: () => Unit, connectionSettings: ConnectionPoolSettings)(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) extends SdkAsyncHttpClient {
   import AkkaHttpClient._
 
-  lazy val runner = new RequestRunner(connectionSettings)
+  lazy val runner = new RequestRunner()
 
   override def execute(request: AsyncExecuteRequest): CompletableFuture[Void] = {
     val akkaHttpRequest = toAkkaRequest(request.request(), request.requestContentPublisher())
-    runner.run(akkaHttpRequest, request.responseHandler())(toSdkHttpFullResponse)
+    runner.run(
+      () => Http().singleRequest(akkaHttpRequest, settings = connectionSettings),
+      request.responseHandler()
+    )
   }
 
   override def close(): Unit = {
@@ -130,28 +133,6 @@ object AkkaHttpClient {
     if (mainAndsubType.length == 2)
       ContentType(MediaType.customBinary(mainAndsubType(0), mainAndsubType(1), Compressible))
     else throw new RuntimeException(s"Could not parse custom content type '$contentTypeStr'.")
-  }
-
-  private[akkahttpspi] def toSdkHttpFullResponse(response: HttpResponse): SdkHttpFullResponse = {
-    SdkHttpFullResponse.builder()
-      .headers(convertToSdkResponseHeaders(response).map { case (k, v) => k -> v.asJava }.asJava)
-      .statusCode(response.status.intValue())
-      .statusText(response.status.reason)
-      .build
-  }
-
-  private[akkahttpspi] def convertToSdkResponseHeaders(response: HttpResponse): Map[String, Seq[String]] = {
-    val contentType = response.entity.contentType match {
-      case ContentTypes.NoContentType => Map.empty[String, List[String]]
-      case contentType => Map(`Content-Type`.name -> List(contentType.value))
-    }
-
-    val contentLength = response.entity.contentLengthOption
-      .map(length => `Content-Length`.name -> List(length.toString)).toMap
-
-    val headers = response.headers.groupBy(_.name()).map { case (k, v) => k -> v.map(_.value()) }
-
-    headers ++ contentType ++ contentLength
   }
 
   def builder() = AkkaHttpClientBuilder()

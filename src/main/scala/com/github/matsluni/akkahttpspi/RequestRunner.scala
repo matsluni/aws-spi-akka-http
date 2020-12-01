@@ -19,9 +19,8 @@ package com.github.matsluni.akkahttpspi
 import java.util.concurrent.CompletableFuture
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
-import akka.http.scaladsl.settings.ConnectionPoolSettings
+import akka.http.scaladsl.model.{ContentTypes, HttpResponse}
+import akka.http.scaladsl.model.headers.{`Content-Length`, `Content-Type`}
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Keep, Sink}
 import org.slf4j.LoggerFactory
@@ -29,36 +28,53 @@ import software.amazon.awssdk.http.SdkHttpFullResponse
 import software.amazon.awssdk.http.async.SdkAsyncHttpResponseHandler
 
 import scala.compat.java8.FutureConverters
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters._
 
-class RequestRunner(connectionPoolSettings: ConnectionPoolSettings)(implicit sys: ActorSystem,
-                                                          ec: ExecutionContext,
-                                                          mat: Materializer) {
+class RequestRunner()(implicit sys: ActorSystem, ec: ExecutionContext, mat: Materializer) {
+
   val logger = LoggerFactory.getLogger(this.getClass)
 
-  def run(httpRequest: HttpRequest,
-          handler: SdkAsyncHttpResponseHandler)
-         (toSdkHttpFullResponse: HttpResponse => SdkHttpFullResponse): CompletableFuture[Void] = {
-    val result = Http()
-      .singleRequest(httpRequest, settings = connectionPoolSettings)
-      .flatMap { response =>
+  def run(runRequest: () => Future[HttpResponse],
+          handler: SdkAsyncHttpResponseHandler): CompletableFuture[Void] = {
+    val result = runRequest().flatMap { response =>
+      handler.onHeaders(toSdkHttpFullResponse(response))
 
-        handler.onHeaders(toSdkHttpFullResponse(response))
-
-        val (complete, publisher) = response
-          .entity
-          .dataBytes
-          .map(_.asByteBuffer)
-          .alsoToMat(Sink.ignore)(Keep.right)
-          .toMat(Sink.asPublisher(fanout = false))(Keep.both)
-          .run()
+      val (complete, publisher) = response
+        .entity
+        .dataBytes
+        .map(_.asByteBuffer)
+        .alsoToMat(Sink.ignore)(Keep.right)
+        .toMat(Sink.asPublisher(fanout = false))(Keep.both)
+        .run()
 
         handler.onStream(publisher)
-
         complete
       }
 
     result.failed.foreach(handler.onError)
     FutureConverters.toJava(result.map(_ => null: Void)).toCompletableFuture
+  }
+
+  private[akkahttpspi] def toSdkHttpFullResponse(response: HttpResponse): SdkHttpFullResponse = {
+    SdkHttpFullResponse.builder()
+      .headers(convertToSdkResponseHeaders(response).map { case (k, v) => k -> v.asJava }.asJava)
+      .statusCode(response.status.intValue())
+      .statusText(response.status.reason)
+      .build
+  }
+
+  private[akkahttpspi] def convertToSdkResponseHeaders(response: HttpResponse): Map[String, Seq[String]] = {
+    val contentType = response.entity.contentType match {
+      case ContentTypes.NoContentType => Map.empty[String, List[String]]
+      case contentType => Map(`Content-Type`.name -> List(contentType.value))
+    }
+
+    val contentLength = response.entity.contentLengthOption
+      .map(length => `Content-Length`.name -> List(length.toString)).toMap
+
+    val headers = response.headers.groupBy(_.name()).map { case (k, v) => k -> v.map(_.value()) }
+
+    headers ++ contentType ++ contentLength
   }
 }
