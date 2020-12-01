@@ -48,9 +48,9 @@ class RequestRunner()(implicit sys: ActorSystem, ec: ExecutionContext, mat: Mate
         .toMat(Sink.asPublisher(fanout = false))(Keep.both)
         .run()
 
-        handler.onStream(publisher)
-        complete
-      }
+      handler.onStream(publisher)
+      complete
+    }
 
     result.failed.foreach(handler.onError)
     FutureConverters.toJava(result.map(_ => null: Void)).toCompletableFuture
