@@ -44,11 +44,14 @@ import scala.concurrent.{Await, ExecutionContext}
 class AkkaHttpClient(shutdownHandle: () => Unit, connectionSettings: ConnectionPoolSettings)(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) extends SdkAsyncHttpClient {
   import AkkaHttpClient._
 
-  lazy val runner = new RequestRunner(connectionSettings)
+  lazy val runner = new RequestRunner()
 
   override def execute(request: AsyncExecuteRequest): CompletableFuture[Void] = {
     val akkaHttpRequest = toAkkaRequest(request.request(), request.requestContentPublisher())
-    runner.run(akkaHttpRequest, request.responseHandler())
+    runner.run(
+      () => Http().singleRequest(akkaHttpRequest, settings = connectionSettings),
+      request.responseHandler()
+    )
   }
 
   override def close(): Unit = {
@@ -131,7 +134,6 @@ object AkkaHttpClient {
       ContentType(MediaType.customBinary(mainAndsubType(0), mainAndsubType(1), Compressible))
     else throw new RuntimeException(s"Could not parse custom content type '$contentTypeStr'.")
   }
-
 
   def builder() = AkkaHttpClientBuilder()
 

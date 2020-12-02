@@ -51,6 +51,8 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
         AsyncResponseTransformer.toBytes[GetObjectResponse]()).join
 
       result.asUtf8String() should be(fileContent)
+      result.response().contentType() should be("text/plain")
+      result.response().contentLength() shouldEqual fileContent.getBytes().length
     }
 
     "multipart upload" ignore withClient { implicit client =>
