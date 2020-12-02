@@ -58,7 +58,7 @@ lazy val deps = {
     "com.typesafe.akka"       %% "akka-stream"             % akkaVersion     withSources(),
     "com.typesafe.akka"       %% "akka-http"               % AkkaHttpVersion withSources(),
     "software.amazon.awssdk"  %  "http-client-spi"         % awsSDKVersion   withSources(),
-    "org.scala-lang.modules"  %% "scala-collection-compat" % "2.2.0"         withSources(),
+    "org.scala-lang.modules"  %% "scala-collection-compat" % "2.3.1"         withSources(),
 
     "software.amazon.awssdk"  %  "s3"                      % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
     "software.amazon.awssdk"  %  "dynamodb"                % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
