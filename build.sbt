@@ -6,7 +6,7 @@ lazy val commonSettings = Seq(
     "-deprecation"),
   scalaVersion := "2.12.12",
   description := "An alternative non-blocking async http engine for aws-sdk-java-v2 based on akka-http",
-  crossScalaVersions := Seq("2.11.12", "2.12.12", "2.13.3"),
+  crossScalaVersions := Seq("2.11.12", "2.12.12", "2.13.4"),
   organization := "com.github.matsluni",
   name := "aws-spi-akka-http",
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
