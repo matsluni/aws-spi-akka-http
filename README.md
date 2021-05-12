@@ -1,6 +1,6 @@
 # AWS Akka-Http SPI implementation 
 
-[![Build Status](https://travis-ci.org/matsluni/aws-spi-akka-http.svg?branch=master)](https://travis-ci.org/matsluni/aws-spi-akka-http) 
+[![Continuous Integration](https://github.com/matsluni/aws-spi-akka-http/actions/workflows/ci.yml/badge.svg)](https://github.com/matsluni/aws-spi-akka-http/actions/workflows/ci.yml)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.matsluni/aws-spi-akka-http_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.matsluni/aws-spi-akka-http_2.12)
 [![License](http://img.shields.io/:license-Apache%202-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt) [![Join the chat at https://gitter.im/aws-spi-akka-http/community](https://badges.gitter.im/aws-spi-akka-http/community.svg)](https://gitter.im/aws-spi-akka-http/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
