@@ -19,22 +19,23 @@ package com.github.matsluni.akkahttpspi.s3
 import java.io.{File, FileWriter}
 
 import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, TestBase}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 import software.amazon.awssdk.core.async.{AsyncRequestBody, AsyncResponseTransformer}
 import software.amazon.awssdk.services.s3.{S3AsyncClient, S3Configuration}
 import software.amazon.awssdk.services.s3.model._
 
 import scala.util.Random
 
-class ITTestS3 extends WordSpec with Matchers with TestBase {
+class ITTestS3 extends AnyWordSpec with Matchers with TestBase {
 
-  def withClient(testCode: S3AsyncClient => Any): Any = {
+  def withClient(checksumEnabled: Boolean = false)(testCode: S3AsyncClient => Any): Any = {
 
     val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
 
     val client = S3AsyncClient
       .builder()
-      .serviceConfiguration(S3Configuration.builder().checksumValidationEnabled(false).build())
+      .serviceConfiguration(S3Configuration.builder().checksumValidationEnabled(checksumEnabled).build())
       .credentialsProvider(credentialProviderChain)
       .region(defaultRegion)
       .httpClient(akkaClient)
@@ -50,8 +51,7 @@ class ITTestS3 extends WordSpec with Matchers with TestBase {
   }
 
   "S3 async client" should {
-
-    "upload and download a file to a bucket + cleanup" in withClient { implicit client =>
+    "upload and download a file to a bucket + cleanup" in withClient(checksumEnabled = true) { implicit client =>
       val bucketName = "aws-spi-test-" + Random.alphanumeric.take(10).filterNot(_.isUpper).mkString
       createBucket(bucketName)
       val randomFile = File.createTempFile("aws", Random.alphanumeric.take(5).mkString)
@@ -70,7 +70,7 @@ class ITTestS3 extends WordSpec with Matchers with TestBase {
       client.deleteBucket(DeleteBucketRequest.builder().bucket(bucketName).build()).join()
     }
 
-    "multipart upload" in withClient { implicit client =>
+    "multipart upload" in withClient() { implicit client =>
       val bucketName = "aws-spi-test-" + Random.alphanumeric.take(5).map(_.toLower).mkString
       createBucket(bucketName)
       val fileContent = (0 to 1000000).mkString

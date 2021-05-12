@@ -21,13 +21,16 @@ import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCrede
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.awssdk.services.dynamodb.model._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class TestDynamoDB extends LocalstackBaseAwsClientTest[DynamoDbAsyncClient] {
   "DynamoDB" should {
-    "create a table" in {
+    "create a table" in withClient { implicit client =>
       val attributes = AttributeDefinition.builder.attributeName("film_id").attributeType(ScalarAttributeType.S).build()
       val keySchema = KeySchemaElement.builder.attributeName("film_id").keyType(KeyType.HASH).build()
+
+      val emptyTableResult = client.listTables().join()
+      emptyTableResult.tableNames().asScala should have size (0)
 
       val result = client.createTable(
         CreateTableRequest.builder()
@@ -39,28 +42,34 @@ class TestDynamoDB extends LocalstackBaseAwsClientTest[DynamoDbAsyncClient] {
 
       val desc = result.tableDescription()
       desc.tableName() should be("Movies")
+
+      val tableResult = client.listTables().join()
+      tableResult.tableNames().asScala should have size (1)
     }
 
-    "list all tables" in {
-      val tableResult = client.listTables().join()
-      tableResult.tableNames().asScala should have size (0)
+  }
+
+  def withClient(testCode: DynamoDbAsyncClient => Any): Any = {
+
+    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
+
+    val client = DynamoDbAsyncClient
+      .builder()
+      .endpointOverride(endpoint)
+      .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
+      .httpClient(akkaClient)
+      .region(defaultRegion)
+      .build()
+
+    try {
+      testCode(client)
+    }
+    finally { // clean up
+      akkaClient.close()
+      client.close()
     }
   }
 
   override val service: String = "dynamodb"
-
-  override def client: DynamoDbAsyncClient = DynamoDbAsyncClient
-    .builder()
-    .endpointOverride(endpoint)
-    .region(defaultRegion)
-    .httpClient(new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build())
-    .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
-    .build()
-
-  before {
-    client.listTables().join().tableNames().asScala.foreach { t =>
-      client.deleteTable(DeleteTableRequest.builder().tableName(t).build()).join()
-    }
-  }
 
 }

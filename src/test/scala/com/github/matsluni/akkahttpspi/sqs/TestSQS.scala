@@ -16,7 +16,7 @@
 
 package com.github.matsluni.akkahttpspi.sqs
 
-import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, BaseAwsClientTest, LocalstackBaseAwsClientTest}
+import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, LocalstackBaseAwsClientTest}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
@@ -24,14 +24,14 @@ import software.amazon.awssdk.services.sqs.model._
 class TestSQS extends LocalstackBaseAwsClientTest[SqsAsyncClient] {
   "Async SQS client" should {
 
-    "publish a message to a queue" in {
+    "publish a message to a queue" in withClient { implicit client =>
       client.createQueue(CreateQueueRequest.builder().queueName("foo").build()).join()
       client.sendMessage(SendMessageRequest.builder().queueUrl(s"$endpoint/queue/foo").messageBody("123").build()).join()
       val receivedMessage = client.receiveMessage(ReceiveMessageRequest.builder().queueUrl(s"$endpoint/queue/foo").maxNumberOfMessages(1).build()).join()
       receivedMessage.messages().get(0).body() should be("123")
     }
 
-    "delete a message" in {
+    "delete a message" in withClient { implicit client =>
       client.createQueue(CreateQueueRequest.builder().queueName("foo").build()).join()
       client.sendMessage(SendMessageRequest.builder().queueUrl(s"$endpoint/queue/foo").messageBody("123").build()).join()
 
@@ -40,18 +40,31 @@ class TestSQS extends LocalstackBaseAwsClientTest[SqsAsyncClient] {
       client.deleteMessage(DeleteMessageRequest.builder().queueUrl(s"$endpoint/queue/foo").receiptHandle(receivedMessages.messages().get(0).receiptHandle()).build()).join()
 
       val receivedMessage = client.receiveMessage(ReceiveMessageRequest.builder().queueUrl(s"$endpoint/queue/foo").maxNumberOfMessages(1).waitTimeSeconds(1).build()).join()
-      receivedMessage.messages() should be('empty)
+      receivedMessage.messages() shouldBe java.util.Collections.EMPTY_LIST
     }
 
   }
 
-  override def service: String = "sqs"
+  def withClient(testCode: SqsAsyncClient => Any): Any = {
 
-  override def client: SqsAsyncClient = SqsAsyncClient
-    .builder()
-    .region(defaultRegion)
-    .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
-    .endpointOverride(endpoint)
-    .httpClient(new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build())
-    .build()
+    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
+
+    val client = SqsAsyncClient
+      .builder()
+      .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x")))
+      .httpClient(akkaClient)
+      .region(defaultRegion)
+      .endpointOverride(endpoint)
+      .build()
+
+    try {
+      testCode(client)
+    }
+    finally { // clean up
+      akkaClient.close()
+      client.close()
+    }
+  }
+
+  override def service: String = "sqs"
 }

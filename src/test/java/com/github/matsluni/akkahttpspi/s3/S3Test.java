@@ -16,6 +16,7 @@
 
 package com.github.matsluni.akkahttpspi.s3;
 
+import akka.actor.ActorSystem;
 import com.github.matsluni.akkahttpspi.AkkaHttpAsyncHttpService;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,8 +35,10 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.net.URI;
 import java.security.SecureRandom;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
@@ -45,7 +48,7 @@ public class S3Test extends JUnitSuite {
   private static SecureRandom rnd = new SecureRandom();
 
   @Rule
-  public GenericContainer s3mock = new GenericContainer<>("adobe/s3mock:2.1.16").withExposedPorts(9090);
+  public GenericContainer s3mock = new GenericContainer<>("adobe/s3mock:2.1.24").withExposedPorts(9090);
 
   @Test
   public void testS3() throws Exception {
@@ -64,23 +67,53 @@ public class S3Test extends JUnitSuite {
               .httpClient(akkaClient)
               .build();
 
-      client.createBucket(CreateBucketRequest.builder().bucket("foo").build()).join();
-      File randomFile = File.createTempFile("aws1", randomString(5));
-      String fileContent = randomString(1000);
-      FileWriter fileWriter = new FileWriter(randomFile);
-      fileWriter.write(fileContent);
-      fileWriter.flush();
-      client.putObject(PutObjectRequest.builder().bucket("foo").key("my-file").contentType("text/plain").build(), randomFile.toPath()).join();
-
-      ResponseBytes result = client.getObject(GetObjectRequest.builder().bucket("foo").key("my-file").build(),
-              AsyncResponseTransformer.toBytes()).join();
-
-      assertEquals(fileContent, result.asUtf8String());
-
+      createBucketAndAssert(client);
     } finally {
       akkaClient.close();
       client.close();
     }
+  }
+
+  @Test
+  public void testS3WithExistingActorSystem() throws Exception {
+    ActorSystem system = ActorSystem.create();
+    SdkAsyncHttpClient akkaClient = null;
+    S3AsyncClient client = null;
+
+    try {
+      akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().withActorSystem(system).build();
+
+      client = S3AsyncClient
+              .builder()
+              .serviceConfiguration(S3Configuration.builder().checksumValidationEnabled(false).build())
+              .credentialsProvider(AnonymousCredentialsProvider.create())
+              .endpointOverride(new URI("http://localhost:" + s3mock.getMappedPort(9090)))
+              .region(Region.of("s3"))
+              .httpClient(akkaClient)
+              .build();
+
+      createBucketAndAssert(client);
+    } finally {
+      akkaClient.close();
+      client.close();
+      system.terminate();
+      system.getWhenTerminated().toCompletableFuture().get(2, TimeUnit.SECONDS);
+    }
+  }
+
+  private void createBucketAndAssert(S3AsyncClient client) throws IOException {
+    client.createBucket(CreateBucketRequest.builder().bucket("foo").build()).join();
+    File randomFile = File.createTempFile("aws1", randomString(5));
+    String fileContent = randomString(1000);
+    FileWriter fileWriter = new FileWriter(randomFile);
+    fileWriter.write(fileContent);
+    fileWriter.flush();
+    client.putObject(PutObjectRequest.builder().bucket("foo").key("my-file").contentType("text/plain").build(), randomFile.toPath()).join();
+
+    ResponseBytes result = client.getObject(GetObjectRequest.builder().bucket("foo").key("my-file").build(),
+            AsyncResponseTransformer.toBytes()).join();
+
+    assertEquals(fileContent, result.asUtf8String());
   }
 
   String randomString(int len) {

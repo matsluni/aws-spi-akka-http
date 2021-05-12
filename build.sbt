@@ -1,13 +1,17 @@
+ThisBuild / organization := "com.github.matsluni"
+ThisBuild / crossScalaVersions := List("2.11.12", "2.12.13", "2.13.4")
+ThisBuild / scalaVersion := crossScalaVersions.value.last
+
+ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
+ThisBuild / githubWorkflowPublishTargetBranches := Nil
+
 lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
     "-target:jvm-1.8",
     "-encoding", "UTF-8",
     "-unchecked",
     "-deprecation"),
-  scalaVersion := "2.12.10",
   description := "An alternative non-blocking async http engine for aws-sdk-java-v2 based on akka-http",
-  crossScalaVersions := Seq("2.11.12", "2.12.10", "2.13.1"),
-  organization := "com.github.matsluni",
   name := "aws-spi-akka-http",
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   organizationName := "Matthias Lüneberg",
@@ -50,27 +54,29 @@ lazy val root = (project in file("."))
 
 
 lazy val deps = {
-  val awsSDKVersion = "2.10.7"
-  val akkaVersion = "2.5.26"
-  val AkkaHttpVersion = "10.1.10"
+  val awsSDKVersion = "2.11.4"
+  val akkaVersion = "2.5.31"
+  val AkkaHttpVersion = "10.1.14"
 
   Seq(
-    "com.typesafe.akka"       %% "akka-stream"          % akkaVersion     withSources(),
-    "com.typesafe.akka"       %% "akka-http"            % AkkaHttpVersion withSources(),
-    "software.amazon.awssdk"  %  "http-client-spi"      % awsSDKVersion   withSources(),
+    "com.typesafe.akka"       %% "akka-stream"             % akkaVersion,
+    "com.typesafe.akka"       %% "akka-http"               % AkkaHttpVersion,
+    "software.amazon.awssdk"  %  "http-client-spi"         % awsSDKVersion,
+    "org.scala-lang.modules"  %% "scala-collection-compat" % "2.4.3",
 
-    "software.amazon.awssdk"  %  "s3"                   % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
-    "software.amazon.awssdk"  %  "dynamodb"             % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
-    "software.amazon.awssdk"  %  "sqs"                  % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
-    "software.amazon.awssdk"  %  "sns"                  % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
+    "software.amazon.awssdk"  %  "s3"                      % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
+    "software.amazon.awssdk"  %  "dynamodb"                % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
+    "software.amazon.awssdk"  %  "sqs"                     % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
+    "software.amazon.awssdk"  %  "sns"                     % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
+    "software.amazon.awssdk"  %  "kinesis"                 % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
 
-    "com.dimafeng"            %% "testcontainers-scala" % "0.34.3"        % "test",
+    "com.dimafeng"            %% "testcontainers-scala"    % "0.39.4"        % "test",
 
-    "junit"                   %  "junit"                % "4.13"          % "test",
+    "junit"                   %  "junit"                   % "4.13.2"          % "test",
 
-    "org.scala-lang.modules"  %% "scala-java8-compat"   % "0.9.0"         % "it,test",
-    "org.scalatest"           %% "scalatest"            % "3.1.0"         % "it,test",
-    "org.scalatestplus"       %% "scalatestplus-junit"  % "1.0.0-M2"      % "it,test",
-    "ch.qos.logback"          %  "logback-classic"      % "1.2.3"         % "it,test"
+    "org.scala-lang.modules"  %% "scala-java8-compat"      % "0.9.1"         % "it,test",
+    "org.scalatest"           %% "scalatest"               % "3.2.8"         % "it,test",
+    "org.scalatestplus"       %% "scalatestplus-junit"     % "1.0.0-M2"      % "it,test",
+    "ch.qos.logback"          %  "logback-classic"         % "1.2.3"         % "it,test"
   )
 }

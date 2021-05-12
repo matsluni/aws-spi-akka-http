@@ -1,6 +1,6 @@
 # AWS Akka-Http SPI implementation 
 
-[![Build Status](https://travis-ci.org/matsluni/aws-spi-akka-http.svg?branch=master)](https://travis-ci.org/matsluni/aws-spi-akka-http) 
+[![Continuous Integration](https://github.com/matsluni/aws-spi-akka-http/actions/workflows/ci.yml/badge.svg)](https://github.com/matsluni/aws-spi-akka-http/actions/workflows/ci.yml)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.matsluni/aws-spi-akka-http_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.matsluni/aws-spi-akka-http_2.12)
 [![License](http://img.shields.io/:license-Apache%202-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt) [![Join the chat at https://gitter.im/aws-spi-akka-http/community](https://badges.gitter.im/aws-spi-akka-http/community.svg)](https://gitter.im/aws-spi-akka-http/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -8,16 +8,13 @@ This library implements the provided [SPI](https://en.wikipedia.org/wiki/Service
 and non-blocking http calls in the new [AWS Java SDK](https://github.com/aws/aws-sdk-java-v2) with 
 [Akka HTTP](https://github.com/akka/akka-http).
 
-This is a prototypical implementation to explore an alternative to netty as the build-in http engine in the aws sdk.
-
-This library is **not production ready** and early alpha. Use at your own risk. 
-Also, the underlying SPI is subject to change.
+This is an alternative implementation to the built-in netty-based async http engine in the aws sdk. Use at your own risk.
 
 ## Usage
 
 Create a dependency to this library by adding the following to your `build.sbt`:
 
-    "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.8"
+    "com.github.matsluni" %% "aws-spi-akka-http" % "0.0.11"
     
 or for Maven, the following to `pom.xml`:
 
@@ -25,7 +22,7 @@ or for Maven, the following to `pom.xml`:
 <dependency>
     <groupId>com.github.matsluni</groupId>
     <artifactId>aws-spi-akka-http_2.12</artifactId>
-    <version>0.0.8</version>
+    <version>0.0.11</version>
 </dependency>
 ```
 
@@ -80,7 +77,7 @@ Netty dependency `netty-nio-client` like this:
 
 ```scala
 libraryDependencies ++= Seq(
-  "software.amazon.awssdk" % "s3" % "2.5.60" exclude("software.amazon.awssdk", "netty-nio-client")
+  "software.amazon.awssdk" % "s3" % "2.11.4" exclude("software.amazon.awssdk", "netty-nio-client")
 )
 ```
 
