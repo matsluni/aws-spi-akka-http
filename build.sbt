@@ -1,13 +1,17 @@
+ThisBuild / organization := "com.github.matsluni"
+ThisBuild / crossScalaVersions := List("2.11.12", "2.12.13", "2.13.4")
+ThisBuild / scalaVersion := crossScalaVersions.value.last
+
+ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
+ThisBuild / githubWorkflowPublishTargetBranches := Nil
+
 lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
     "-target:jvm-1.8",
     "-encoding", "UTF-8",
     "-unchecked",
     "-deprecation"),
-  scalaVersion := "2.12.13",
   description := "An alternative non-blocking async http engine for aws-sdk-java-v2 based on akka-http",
-  crossScalaVersions := Seq("2.11.12", "2.12.13", "2.13.4"),
-  organization := "com.github.matsluni",
   name := "aws-spi-akka-http",
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   organizationName := "Matthias Lüneberg",
