@@ -1,5 +1,5 @@
 ThisBuild / organization := "com.github.matsluni"
-ThisBuild / crossScalaVersions := List("2.11.12", "2.12.13", "2.13.4")
+ThisBuild / crossScalaVersions := List("2.11.12", "2.12.14", "2.13.6")
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 
 ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
@@ -70,12 +70,12 @@ lazy val deps = {
     "software.amazon.awssdk"  %  "sns"                     % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
     "software.amazon.awssdk"  %  "kinesis"                 % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
 
-    "com.dimafeng"            %% "testcontainers-scala"    % "0.39.4"        % "test",
+    "com.dimafeng"            %% "testcontainers-scala"    % "0.39.5"        % "test",
 
     "junit"                   %  "junit"                   % "4.13.2"          % "test",
 
-    "org.scala-lang.modules"  %% "scala-java8-compat"      % "1.0.0"         % "it,test",
-    "org.scalatest"           %% "scalatest"               % "3.2.8"         % "it,test",
+    "org.scala-lang.modules"  %% "scala-java8-compat"      % "0.9.1"         % "it,test",
+    "org.scalatest"           %% "scalatest"               % "3.2.9"         % "it,test",
     "org.scalatestplus"       %% "scalatestplus-junit"     % "1.0.0-M2"      % "it,test",
     "ch.qos.logback"          %  "logback-classic"         % "1.2.3"         % "it,test"
   )
