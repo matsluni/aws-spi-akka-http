@@ -77,6 +77,6 @@ lazy val deps = {
     "org.scala-lang.modules"  %% "scala-java8-compat"      % "1.0.1"         % "it,test",
     "org.scalatest"           %% "scalatest"               % "3.2.9"         % "it,test",
     "org.scalatestplus"       %% "scalatestplus-junit"     % "1.0.0-M2"      % "it,test",
-    "ch.qos.logback"          %  "logback-classic"         % "1.2.6"         % "it,test"
+    "ch.qos.logback"          %  "logback-classic"         % "1.2.8"         % "it,test"
   )
 }
