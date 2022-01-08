@@ -62,7 +62,7 @@ lazy val deps = {
     "com.typesafe.akka"       %% "akka-stream"             % akkaVersion,
     "com.typesafe.akka"       %% "akka-http"               % AkkaHttpVersion,
     "software.amazon.awssdk"  %  "http-client-spi"         % awsSDKVersion,
-    "org.scala-lang.modules"  %% "scala-collection-compat" % "2.5.0",
+    "org.scala-lang.modules"  %% "scala-collection-compat" % "2.6.0",
 
     "software.amazon.awssdk"  %  "s3"                      % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
     "software.amazon.awssdk"  %  "dynamodb"                % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
@@ -70,13 +70,13 @@ lazy val deps = {
     "software.amazon.awssdk"  %  "sns"                     % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
     "software.amazon.awssdk"  %  "kinesis"                 % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
 
-    "com.dimafeng"            %% "testcontainers-scala"    % "0.39.9"        % "test",
+    "com.dimafeng"            %% "testcontainers-scala"    % "0.39.12"        % "test",
 
     "junit"                   %  "junit"                   % "4.13.2"          % "test",
 
-    "org.scala-lang.modules"  %% "scala-java8-compat"      % "1.0.2"         % "it,test",
-    "org.scalatest"           %% "scalatest"               % "3.2.9"         % "it,test",
+    "org.scala-lang.modules"  %% "scala-java8-compat"      % "1.0.1"         % "it,test",
+    "org.scalatest"           %% "scalatest"               % "3.2.10"         % "it,test",
     "org.scalatestplus"       %% "scalatestplus-junit"     % "1.0.0-M2"      % "it,test",
-    "ch.qos.logback"          %  "logback-classic"         % "1.2.6"         % "it,test"
+    "ch.qos.logback"          %  "logback-classic"         % "1.2.10"         % "it,test"
   )
 }
