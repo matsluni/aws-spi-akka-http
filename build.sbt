@@ -56,7 +56,7 @@ lazy val root = (project in file("."))
 lazy val deps = {
   val awsSDKVersion = "2.11.4"
   val akkaVersion = "2.5.31"
-  val AkkaHttpVersion = "10.1.14"
+  val AkkaHttpVersion = "10.1.15"
 
   Seq(
     "com.typesafe.akka"       %% "akka-stream"             % akkaVersion,
@@ -70,12 +70,12 @@ lazy val deps = {
     "software.amazon.awssdk"  %  "sns"                     % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
     "software.amazon.awssdk"  %  "kinesis"                 % awsSDKVersion   % "test" exclude("software.amazon.awssdk", "netty-nio-client"),
 
-    "com.dimafeng"            %% "testcontainers-scala"    % "0.39.12"        % "test",
+    "com.dimafeng"            %% "testcontainers-scala"    % "0.40.1"        % "test",
 
     "junit"                   %  "junit"                   % "4.13.2"          % "test",
 
     "org.scala-lang.modules"  %% "scala-java8-compat"      % "1.0.1"         % "it,test",
-    "org.scalatest"           %% "scalatest"               % "3.2.10"         % "it,test",
+    "org.scalatest"           %% "scalatest"               % "3.2.11"         % "it,test",
     "org.scalatestplus"       %% "scalatestplus-junit"     % "1.0.0-M2"      % "it,test",
     "ch.qos.logback"          %  "logback-classic"         % "1.2.10"         % "it,test"
   )
