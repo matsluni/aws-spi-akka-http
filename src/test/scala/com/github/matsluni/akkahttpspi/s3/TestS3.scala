@@ -116,7 +116,7 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
   override def exposedServicePort: Int = 9090
 
   override lazy val container: GenericContainer = new GenericContainer(
-    dockerImage = "adobe/s3mock:2.1.24",
+    dockerImage = "adobe/s3mock:2.13.0",
     exposedPorts = Seq(exposedServicePort),
     waitStrategy = Some(TimeoutWaitStrategy(10 seconds))
   )
