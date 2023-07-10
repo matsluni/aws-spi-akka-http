@@ -55,10 +55,10 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
       result.response().contentLength() shouldEqual fileContent.getBytes().length
     }
 
-    "multipart upload" ignore withClient { implicit client =>
+    "multipart upload" in withClient { implicit client =>
       val bucketName = createBucket()
       val randomFile = File.createTempFile("aws1", Random.alphanumeric.take(5).mkString)
-      val fileContent = Random.alphanumeric.take(1000).mkString
+      val fileContent = (0 to 1000000).mkString
       val fileWriter = new FileWriter(randomFile)
       fileWriter.write(fileContent)
       fileWriter.flush()
@@ -73,7 +73,9 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
         .key("bar")
         .multipartUpload(CompletedMultipartUpload
           .builder()
-          .parts(CompletedPart.builder().partNumber(1).eTag(p1.eTag()).build(), CompletedPart.builder().partNumber(2).eTag(p2.eTag()).build())
+          .parts(
+            CompletedPart.builder().partNumber(1).eTag(p1.eTag()).build(),
+            CompletedPart.builder().partNumber(2).eTag(p2.eTag()).build())
           .build())
         .uploadId(createMultipartUploadResponse.uploadId())
         .build()).join
@@ -97,7 +99,13 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
 
     val client = S3AsyncClient
       .builder()
-      .serviceConfiguration(S3Configuration.builder().checksumValidationEnabled(false).build())
+      .serviceConfiguration(
+        S3Configuration
+          .builder()
+          .checksumValidationEnabled(false)
+          .pathStyleAccessEnabled(true)
+          .build()
+      )
       .credentialsProvider(AnonymousCredentialsProvider.create)
       .endpointOverride(endpoint)
       .httpClient(akkaClient)
@@ -116,7 +124,7 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
   override def exposedServicePort: Int = 9090
 
   override lazy val container: GenericContainer = new GenericContainer(
-    dockerImage = "adobe/s3mock:2.1.24",
+    dockerImage = "adobe/s3mock:2.13.0",
     exposedPorts = Seq(exposedServicePort),
     waitStrategy = Some(TimeoutWaitStrategy(10 seconds))
   )
