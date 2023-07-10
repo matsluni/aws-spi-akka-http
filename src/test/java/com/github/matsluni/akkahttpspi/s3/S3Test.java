@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -57,15 +58,7 @@ public class S3Test extends JUnitSuite {
 
     try {
       akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build();
-
-      client = S3AsyncClient
-              .builder()
-              .serviceConfiguration(S3Configuration.builder().checksumValidationEnabled(false).build())
-              .credentialsProvider(AnonymousCredentialsProvider.create())
-              .endpointOverride(new URI("http://localhost:" + s3mock.getMappedPort(9090)))
-              .region(Region.of("s3"))
-              .httpClient(akkaClient)
-              .build();
+      client = getAsyncClient(akkaClient);
 
       createBucketAndAssert(client);
     } finally {
@@ -82,15 +75,7 @@ public class S3Test extends JUnitSuite {
 
     try {
       akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().withActorSystem(system).build();
-
-      client = S3AsyncClient
-              .builder()
-              .serviceConfiguration(S3Configuration.builder().checksumValidationEnabled(false).build())
-              .credentialsProvider(AnonymousCredentialsProvider.create())
-              .endpointOverride(new URI("http://localhost:" + s3mock.getMappedPort(9090)))
-              .region(Region.of("s3"))
-              .httpClient(akkaClient)
-              .build();
+      client = getAsyncClient(akkaClient);
 
       createBucketAndAssert(client);
     } finally {
@@ -114,6 +99,22 @@ public class S3Test extends JUnitSuite {
             AsyncResponseTransformer.toBytes()).join();
 
     assertEquals(fileContent, result.asUtf8String());
+  }
+
+  private S3AsyncClient getAsyncClient(SdkAsyncHttpClient akkaClient) throws URISyntaxException {
+    return S3AsyncClient
+            .builder()
+            .serviceConfiguration(
+                    S3Configuration.builder()
+                            .checksumValidationEnabled(false)
+                            .pathStyleAccessEnabled(true)
+                            .build()
+            )
+            .credentialsProvider(AnonymousCredentialsProvider.create())
+            .endpointOverride(new URI("http://localhost:" + s3mock.getMappedPort(9090)))
+            .region(Region.of("s3"))
+            .httpClient(akkaClient)
+            .build();
   }
 
   String randomString(int len) {
