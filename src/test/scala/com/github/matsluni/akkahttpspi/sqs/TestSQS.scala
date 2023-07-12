@@ -16,12 +16,13 @@
 
 package com.github.matsluni.akkahttpspi.sqs
 
-import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, LocalstackBaseAwsClientTest}
+import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, ElasticMQSQSBaseAwsClientTest}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
 
-class TestSQS extends LocalstackBaseAwsClientTest[SqsAsyncClient] {
+// switched to use ElasticMQ container instead of Localstack due to https://github.com/localstack/localstack/issues/8545
+class TestSQS extends ElasticMQSQSBaseAwsClientTest[SqsAsyncClient] {
   "Async SQS client" should {
 
     "publish a message to a queue" in withClient { implicit client =>
