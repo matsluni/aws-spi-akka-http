@@ -1,5 +1,6 @@
 ThisBuild / organization := "com.github.matsluni"
-ThisBuild / crossScalaVersions := List("2.11.12", "2.12.15", "2.13.8")
+// https://www.scala-lang.org/download/all.html
+ThisBuild / crossScalaVersions := List("2.11.12", "2.12.18", "2.13.11")
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 
 ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
