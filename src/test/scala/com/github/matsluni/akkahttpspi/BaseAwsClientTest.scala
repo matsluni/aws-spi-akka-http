@@ -60,3 +60,15 @@ trait LocalstackBaseAwsClientTest[C <: SdkClient] extends BaseAwsClientTest[C] {
       waitStrategy = Some(LocalStackReadyLogWaitStrategy)
     )
 }
+
+trait ElasticMQSQSBaseAwsClientTest[C <: SdkClient] extends BaseAwsClientTest[C] {
+  def service: String
+
+  lazy val exposedServicePort: Int = 9324
+
+  override lazy val container: GenericContainer =
+    new GenericContainer(
+      dockerImage = "softwaremill/elasticmq-native",
+      exposedPorts = Seq(exposedServicePort)
+    )
+}
