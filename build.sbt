@@ -37,14 +37,14 @@ lazy val root = (project in file("."))
     automateHeaderSettings(Test, IntegrationTest),
     headerSettings(Test, IntegrationTest),
     libraryDependencies ++= deps,
-    (Test / fork) := true,
+    fork in Test := true,
     releasePublishArtifactsAction := PgpKeys.publishSigned.value,
     useGpg := false,
     pgpPublicRing := file(Path.userHome.absolutePath + "/.gnupg/pubring.gpg"),
     pgpSecretRing := file(Path.userHome.absolutePath + "/.gnupg/secring.gpg"),
     pgpPassphrase := sys.env.get("PGP_PASS").map(_.toArray),
     publishMavenStyle := true,
-    (Test / publishArtifact) := false,
+    publishArtifact in Test := false,
     pomIncludeRepository := (_ => false),
     publishTo := Some(
       if (version.value.trim.endsWith("SNAPSHOT"))
