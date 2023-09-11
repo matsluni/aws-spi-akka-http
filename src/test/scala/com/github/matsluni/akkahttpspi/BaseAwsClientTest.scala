@@ -52,13 +52,13 @@ trait LocalstackBaseAwsClientTest[C <: SdkClient] extends BaseAwsClientTest[C] {
 
   lazy val exposedServicePort: Int = 4566
 
-  override lazy val container: GenericContainer =
-    new GenericContainer(
-      dockerImage = "localstack/localstack",
-      exposedPorts = Seq(exposedServicePort),
-      env = Map("SERVICES" -> service),
-      waitStrategy = Some(LocalStackReadyLogWaitStrategy)
-    )
+  private lazy val containerInstance = new GenericContainer(
+    dockerImage = "localstack/localstack",
+    exposedPorts = Seq(exposedServicePort),
+    env = Map("SERVICES" -> service),
+    waitStrategy = Some(LocalStackReadyLogWaitStrategy)
+  )
+  override val container: GenericContainer = containerInstance
 }
 
 trait ElasticMQSQSBaseAwsClientTest[C <: SdkClient] extends BaseAwsClientTest[C] {
@@ -66,7 +66,7 @@ trait ElasticMQSQSBaseAwsClientTest[C <: SdkClient] extends BaseAwsClientTest[C]
 
   lazy val exposedServicePort: Int = 9324
 
-  override lazy val container: GenericContainer =
+  override val container: GenericContainer =
     new GenericContainer(
       dockerImage = "softwaremill/elasticmq-native",
       exposedPorts = Seq(exposedServicePort)
