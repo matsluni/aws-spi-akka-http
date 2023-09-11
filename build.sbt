@@ -1,6 +1,6 @@
 ThisBuild / organization := "com.github.matsluni"
 // https://www.scala-lang.org/download/all.html
-ThisBuild / crossScalaVersions := List("2.12.18", "2.13.11")
+ThisBuild / crossScalaVersions := List("2.12.18", "2.13.11", "3.2.2")
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
@@ -57,8 +57,8 @@ lazy val root = (project in file("."))
 
 lazy val deps = {
   val awsSDKVersion = "2.11.4"
-  val akkaVersion = "2.6.21"
-  val AkkaHttpVersion = "10.2.10"
+  val akkaVersion = "2.8.1"
+  val AkkaHttpVersion = "10.5.1"
 
   Seq(
     "com.typesafe.akka"       %% "akka-stream"                    % akkaVersion,
@@ -78,7 +78,7 @@ lazy val deps = {
 
     "org.scala-lang.modules"  %% "scala-java8-compat"             % "1.0.2"         % "it,test",
     "org.scalatest"           %% "scalatest"                      % "3.2.16"        % "it,test",
-    "org.scalatestplus"       %% "scalatestplus-junit"            % "1.0.0-M2"      % "it,test",
+    "org.scalatestplus"       %% "junit-4-13"                     % "3.2.12.0"      % "it,test",
     "ch.qos.logback"          %  "logback-classic"                % "1.3.11"        % "it,test"
   )
 }
