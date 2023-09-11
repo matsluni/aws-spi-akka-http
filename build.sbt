@@ -1,13 +1,15 @@
 ThisBuild / organization := "com.github.matsluni"
 // https://www.scala-lang.org/download/all.html
-ThisBuild / crossScalaVersions := List("2.11.12", "2.12.18", "2.13.11")
+ThisBuild / crossScalaVersions := List("2.12.18", "2.13.11")
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
 
 lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
-    "-target:jvm-1.8",
+    if (scalaVersion.value.startsWith("2.12")) "-target:jvm-1.8"
+    else if (scalaVersion.value.startsWith("3.")) "-Xtarget:8"
+    else "-release:8",
     "-encoding", "UTF-8",
     "-unchecked",
     "-deprecation"),
@@ -55,8 +57,8 @@ lazy val root = (project in file("."))
 
 lazy val deps = {
   val awsSDKVersion = "2.11.4"
-  val akkaVersion = "2.5.31"
-  val AkkaHttpVersion = "10.1.15"
+  val akkaVersion = "2.6.21"
+  val AkkaHttpVersion = "10.2.10"
 
   Seq(
     "com.typesafe.akka"       %% "akka-stream"                    % akkaVersion,
