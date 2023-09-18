@@ -1,6 +1,6 @@
 ThisBuild / organization := "com.github.matsluni"
 // https://www.scala-lang.org/download/all.html
-ThisBuild / crossScalaVersions := List("2.12.18", "2.13.12", "3.2.2")
+ThisBuild / crossScalaVersions := List("2.12.18", "2.13.12", "3.3.1")
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
@@ -77,8 +77,8 @@ lazy val deps = {
     "junit"                   %  "junit"                          % "4.13.2"        % "test",
 
     "org.scala-lang.modules"  %% "scala-java8-compat"             % "1.0.2"         % "it,test",
-    "org.scalatest"           %% "scalatest"                      % "3.2.16"        % "it,test",
-    "org.scalatestplus"       %% "junit-4-13"                     % "3.2.12.0"      % "it,test",
+    "org.scalatest"           %% "scalatest"                      % "3.2.17"        % "it,test",
+    "org.scalatestplus"       %% "junit-4-13"                     % "3.2.17.0"      % "it,test",
     "ch.qos.logback"          %  "logback-classic"                % "1.3.11"        % "it,test"
   )
 }
