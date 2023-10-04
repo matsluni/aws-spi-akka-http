@@ -32,7 +32,7 @@ import akka.stream.{ActorMaterializer, Materializer, SystemMaterializer}
 import akka.util.ByteString
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.http.async._
-import software.amazon.awssdk.http.SdkHttpRequest
+import software.amazon.awssdk.http.{Protocol, SdkHttpConfigurationOption, SdkHttpRequest}
 import software.amazon.awssdk.utils.AttributeMap
 
 import scala.collection.immutable
@@ -41,13 +41,13 @@ import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext}
 
-class AkkaHttpClient(shutdownHandle: () => Unit, connectionSettings: ConnectionPoolSettings)(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) extends SdkAsyncHttpClient {
+class AkkaHttpClient(shutdownHandle: () => Unit, connectionSettings: ConnectionPoolSettings, protocol: HttpProtocol)(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) extends SdkAsyncHttpClient {
   import AkkaHttpClient._
 
   lazy val runner = new RequestRunner()
 
   override def execute(request: AsyncExecuteRequest): CompletableFuture[Void] = {
-    val akkaHttpRequest = toAkkaRequest(request.request(), request.requestContentPublisher())
+    val akkaHttpRequest = toAkkaRequest(protocol, request.request(), request.requestContentPublisher())
     runner.run(
       () => Http().singleRequest(akkaHttpRequest, settings = connectionSettings),
       request.responseHandler()
@@ -65,7 +65,7 @@ object AkkaHttpClient {
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
-  private[akkahttpspi] def toAkkaRequest(request: SdkHttpRequest, contentPublisher: SdkHttpContentPublisher): HttpRequest = {
+  private[akkahttpspi] def toAkkaRequest(protocol: HttpProtocol, request: SdkHttpRequest, contentPublisher: SdkHttpContentPublisher): HttpRequest = {
     val (contentTypeHeader, reqheaders) = convertHeaders(request.headers())
     val method = convertMethod(request.method().name())
     HttpRequest(
@@ -73,7 +73,7 @@ object AkkaHttpClient {
       uri      = Uri(request.getUri.toString),
       headers  = reqheaders,
       entity   = entityForMethodAndContentType(method, contentTypeHeaderToContentType(contentTypeHeader), contentPublisher),
-      protocol = HttpProtocols.`HTTP/1.1`
+      protocol = protocol
     )
   }
 
@@ -145,19 +145,29 @@ object AkkaHttpClient {
       implicit val ec = executionContext.getOrElse(as.dispatcher)
       val mat: Materializer = SystemMaterializer(as).materializer
 
+      val mergedAttributeMap = attributeMap.merge(SdkHttpConfigurationOption.GLOBAL_HTTP_DEFAULTS)
+
       val cps = connectionPoolSettings.getOrElse(ConnectionPoolSettings(as))
+      val protocol = convertProtocol(mergedAttributeMap.get(SdkHttpConfigurationOption.PROTOCOL))
       val shutdownhandleF = () => {
         if (actorSystem.isEmpty) {
           Await.result(Http().shutdownAllConnectionPools().flatMap(_ => as.terminate()), Duration.apply(10, TimeUnit.SECONDS))
         }
         ()
       }
-      new AkkaHttpClient(shutdownhandleF, cps)(as, ec, mat)
+      new AkkaHttpClient(shutdownhandleF, cps, protocol)(as, ec, mat)
     }
     def withActorSystem(actorSystem: ActorSystem): AkkaHttpClientBuilder = copy(actorSystem = Some(actorSystem))
     def withActorSystem(actorSystem: ClassicActorSystemProvider): AkkaHttpClientBuilder = copy(actorSystem = Some(actorSystem.classicSystem))
     def withExecutionContext(executionContext: ExecutionContext): AkkaHttpClientBuilder = copy(executionContext = Some(executionContext))
     def withConnectionPoolSettings(connectionPoolSettings: ConnectionPoolSettings): AkkaHttpClientBuilder = copy(connectionPoolSettings = Some(connectionPoolSettings))
+  }
+
+  private def convertProtocol(protocol: Protocol) = {
+    protocol match {
+      case Protocol.HTTP1_1 => HttpProtocols.`HTTP/1.1`
+      case Protocol.HTTP2 => HttpProtocols.`HTTP/2.0`
+    }
   }
 
   lazy val xAmzJson = ContentType(MediaType.customBinary("application", "x-amz-json-1.0", Compressible))
