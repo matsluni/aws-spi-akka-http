@@ -17,7 +17,6 @@
 package com.github.matsluni.akkahttpspi
 
 import java.util.concurrent.CompletableFuture
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentTypes, HttpResponse}
 import akka.http.scaladsl.model.headers.{`Content-Length`, `Content-Type`}
@@ -27,6 +26,7 @@ import org.slf4j.LoggerFactory
 import software.amazon.awssdk.http.SdkHttpFullResponse
 import software.amazon.awssdk.http.async.SdkAsyncHttpResponseHandler
 
+import java.io.IOException
 import scala.compat.java8.FutureConverters
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
@@ -52,7 +52,7 @@ class RequestRunner()(implicit sys: ActorSystem, ec: ExecutionContext, mat: Mate
       complete
     }
 
-    result.failed.foreach(handler.onError)
+    result.failed.foreach(e => handler.onError(decorateException(e)))
     FutureConverters.toJava(result.map(_ => null: Void)).toCompletableFuture
   }
 
@@ -62,6 +62,15 @@ class RequestRunner()(implicit sys: ActorSystem, ec: ExecutionContext, mat: Mate
       .statusCode(response.status.intValue())
       .statusText(response.status.reason)
       .build
+  }
+
+  //Decorate akka-http exceptions to exceptions understood by the AWS SDK so that they are automatically retried by the default retry policy
+  //This was inspired in NettyUtils.decorateException (https://github.com/aws/aws-sdk-java-v2/blob/13985e0668a9a0b12ad331644e3c4fd1385c2cd7/http-clients/netty-nio-client/src/main/java/software/amazon/awssdk/http/nio/netty/internal/utils/NettyUtils.java#L67-L80)
+  private[akkahttpspi] def decorateException(e: Throwable): Throwable = e match {
+    //workaround for akka.http.impl.engine.client.OutgoingConnectionBlueprint.UnexpectedConnectionClosureException being private
+    //see more details in https://github.com/akka/akka-http/issues/3481
+    case e if e.getMessage.startsWith("The http server closed the connection unexpectedly") => new IOException(e)
+    case e => e
   }
 
   private[akkahttpspi] def convertToSdkResponseHeaders(response: HttpResponse): Map[String, Seq[String]] = {
