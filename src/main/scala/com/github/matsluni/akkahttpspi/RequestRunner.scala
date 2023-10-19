@@ -52,7 +52,7 @@ class RequestRunner()(implicit sys: ActorSystem, ec: ExecutionContext, mat: Mate
       complete
     }
 
-    result.failed.foreach(e => handler.onError(RequestRunner.decorateException(e)))
+    result.failed.foreach(e => handler.onError(e))
     FutureConverters.toJava(result.map(_ => null: Void)).toCompletableFuture
   }
 
