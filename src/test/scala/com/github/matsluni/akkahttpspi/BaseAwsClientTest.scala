@@ -62,6 +62,8 @@ trait LocalstackBaseAwsClientTest[C <: SdkClient] extends BaseAwsClientTest[C] {
   override val container: GenericContainer = containerInstance
 
   protected def killLocalstackProcess(): Unit = {
+    // restarting the docker container is not a solution because the port will change
+    // https://github.com/testcontainers/testcontainers-java/issues/606
     container.dockerClient.execStartCmd(
       container.dockerClient.execCreateCmd(container.containerId).withCmd("pkill", "python").exec().getId
     ).exec(new AsyncResultCallback[Frame]()).awaitCompletion().awaitResult()
