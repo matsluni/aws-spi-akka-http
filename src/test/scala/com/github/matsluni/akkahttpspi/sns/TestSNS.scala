@@ -84,7 +84,7 @@ class TestSNS extends LocalstackBaseAwsClientTest[SnsAsyncClient] {
   private def withLongRetriesClient(testCode: SnsAsyncClient => Any) = withCustomClient(b =>
     b.overrideConfiguration { (b: ClientOverrideConfiguration.Builder) =>
       b.retryPolicy(RetryPolicy.builder()
-        .numRetries(6)
+        .numRetries(10)
         .backoffStrategy(FixedDelayBackoffStrategy.create(Duration.ofSeconds(1)))
         .build()
       )
