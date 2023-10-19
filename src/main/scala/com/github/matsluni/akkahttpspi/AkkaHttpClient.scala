@@ -32,7 +32,7 @@ import akka.stream.{ActorMaterializer, Materializer, SystemMaterializer}
 import akka.util.ByteString
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.http.async._
-import software.amazon.awssdk.http.{Protocol, SdkHttpConfigurationOption, SdkHttpRequest}
+import software.amazon.awssdk.http.SdkHttpRequest
 import software.amazon.awssdk.utils.AttributeMap
 
 import scala.collection.immutable
@@ -139,16 +139,15 @@ object AkkaHttpClient {
 
   case class AkkaHttpClientBuilder(private val actorSystem: Option[ActorSystem] = None,
                                    private val executionContext: Option[ExecutionContext] = None,
-                                   private val connectionPoolSettings: Option[ConnectionPoolSettings] = None) extends SdkAsyncHttpClient.Builder[AkkaHttpClientBuilder] {
+                                   private val connectionPoolSettings: Option[ConnectionPoolSettings] = None,
+                                   private val protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`
+                                  ) extends SdkAsyncHttpClient.Builder[AkkaHttpClientBuilder] {
     def buildWithDefaults(attributeMap: AttributeMap): SdkAsyncHttpClient = {
       implicit val as = actorSystem.getOrElse(ActorSystem("aws-akka-http"))
       implicit val ec = executionContext.getOrElse(as.dispatcher)
       val mat: Materializer = SystemMaterializer(as).materializer
 
-      val mergedAttributeMap = attributeMap.merge(SdkHttpConfigurationOption.GLOBAL_HTTP_DEFAULTS)
-
       val cps = connectionPoolSettings.getOrElse(ConnectionPoolSettings(as))
-      val protocol = convertProtocol(mergedAttributeMap.get(SdkHttpConfigurationOption.PROTOCOL))
       val shutdownhandleF = () => {
         if (actorSystem.isEmpty) {
           Await.result(Http().shutdownAllConnectionPools().flatMap(_ => as.terminate()), Duration.apply(10, TimeUnit.SECONDS))
@@ -161,13 +160,6 @@ object AkkaHttpClient {
     def withActorSystem(actorSystem: ClassicActorSystemProvider): AkkaHttpClientBuilder = copy(actorSystem = Some(actorSystem.classicSystem))
     def withExecutionContext(executionContext: ExecutionContext): AkkaHttpClientBuilder = copy(executionContext = Some(executionContext))
     def withConnectionPoolSettings(connectionPoolSettings: ConnectionPoolSettings): AkkaHttpClientBuilder = copy(connectionPoolSettings = Some(connectionPoolSettings))
-  }
-
-  private def convertProtocol(protocol: Protocol) = {
-    protocol match {
-      case Protocol.HTTP1_1 => HttpProtocols.`HTTP/1.1`
-      case Protocol.HTTP2 => HttpProtocols.`HTTP/2.0`
-    }
   }
 
   lazy val xAmzJson = ContentType(MediaType.customBinary("application", "x-amz-json-1.0", Compressible))
