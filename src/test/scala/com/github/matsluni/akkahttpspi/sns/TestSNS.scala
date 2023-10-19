@@ -88,6 +88,7 @@ class TestSNS extends LocalstackBaseAwsClientTest[SnsAsyncClient] {
         .backoffStrategy(FixedDelayBackoffStrategy.create(Duration.ofSeconds(1)))
         .build()
       )
+      ()
     }
   )(testCode)
 
