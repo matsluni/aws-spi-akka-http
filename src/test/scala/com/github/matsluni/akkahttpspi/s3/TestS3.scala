@@ -17,14 +17,16 @@
 package com.github.matsluni.akkahttpspi.s3
 
 import java.io.{File, FileWriter}
-
 import com.dimafeng.testcontainers.GenericContainer
 import com.github.matsluni.akkahttpspi.testcontainers.TimeoutWaitStrategy
 import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, BaseAwsClientTest}
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.core.async.{AsyncRequestBody, AsyncResponseTransformer}
+import software.amazon.awssdk.http.Protocol
+import software.amazon.awssdk.http.SdkHttpConfigurationOption
 import software.amazon.awssdk.services.s3.{S3AsyncClient, S3Configuration}
 import software.amazon.awssdk.services.s3.model._
+import software.amazon.awssdk.utils.AttributeMap
 
 import scala.jdk.CollectionConverters._
 import scala.concurrent.duration._
@@ -34,14 +36,14 @@ import scala.util.Random
 class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
 
   "Async S3 client" should {
-    "create bucket" in withClient { implicit client =>
+    "create bucket" in withClient() { implicit client =>
       val bucketName = createBucket()
       val buckets = client.listBuckets().join
       buckets.buckets() should have size (1)
       buckets.buckets().asScala.toList.head.name() should be(bucketName)
     }
 
-    "upload and download a file to a bucket" in withClient { implicit client =>
+    "upload and download a file to a bucket" in withClient() { implicit client =>
       val bucketName = createBucket()
       val fileContent = 0 to 1000 mkString
 
@@ -55,7 +57,7 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
       result.response().contentLength() shouldEqual fileContent.getBytes().length
     }
 
-    "multipart upload" in withClient { implicit client =>
+    "multipart upload" in withClient() { implicit client =>
       val bucketName = createBucket()
       val randomFile = File.createTempFile("aws1", Random.alphanumeric.take(5).mkString)
       val fileContent = (0 to 1000000).mkString
@@ -85,6 +87,13 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
       result.asUtf8String() should be(fileContent + fileContent)
     }
 
+    val http2AttributeMap = AttributeMap.builder().put(SdkHttpConfigurationOption.PROTOCOL, Protocol.HTTP2).build()
+    //adobe/s3mock does not support HTTP/2
+    "work with HTTP/2" ignore withClient(http2AttributeMap) { implicit client =>
+      val result = client.listBuckets().join()
+      result.buckets() should not be null
+    }
+
   }
 
   def createBucket()(implicit client: S3AsyncClient): String = {
@@ -93,9 +102,9 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
     bucketName
   }
 
-  private def withClient(testCode: S3AsyncClient => Any): Any = {
+  private def withClient(attributeMap: AttributeMap = AttributeMap.empty())(testCode: S3AsyncClient => Any): Any = {
 
-    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
+    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().buildWithDefaults(attributeMap)
 
     val client = S3AsyncClient
       .builder()
