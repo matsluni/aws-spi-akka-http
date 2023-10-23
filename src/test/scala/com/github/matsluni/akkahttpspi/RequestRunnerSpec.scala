@@ -29,6 +29,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import software.amazon.awssdk.http.SdkHttpResponse
 import software.amazon.awssdk.http.async.SdkAsyncHttpResponseHandler
 
+import java.io.IOException
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 
@@ -46,6 +47,30 @@ class RequestRunnerSpec extends AnyWordSpec with Matchers with OptionValues {
     handler.responseHeaders.headers().asScala.get("Content-Type").value.asScala.headOption.value shouldBe "text/plain; charset=UTF-8"
     handler.responseHeaders.headers().asScala.get("Content-Length").value.asScala.headOption.value shouldBe "2"
   }
+
+  "decorate UnexpectedConnectionClosureException" in {
+    //instantiate akka.http.impl.engine.client.OutgoingConnectionBlueprint.UnexpectedConnectionClosureException using reflection
+    val clazz = Class.forName("akka.http.impl.engine.client.OutgoingConnectionBlueprint$UnexpectedConnectionClosureException")
+    val e = clazz.getDeclaredConstructor(classOf[Int]).newInstance(Integer.valueOf(1)).asInstanceOf[Throwable]
+    val ioexception = RequestRunner.decorateException(e)
+    ioexception shouldBe a[IOException]
+    ioexception.getMessage shouldBe "akka.http.impl.engine.client.OutgoingConnectionBlueprint$UnexpectedConnectionClosureException: The http server closed the connection unexpectedly before delivering responses for 1 outstanding requests"
+  }
+
+  "decorate StreamTcpException" in {
+    val e = new akka.stream.StreamTcpException("The connection closed with error: Connection reset")
+    val ioexception = RequestRunner.decorateException(e)
+    ioexception shouldBe a[IOException]
+    ioexception.getMessage shouldBe "akka.stream.StreamTcpException: The connection closed with error: Connection reset"
+  }
+  "decorate IllegalStateException with 'Connection was shutdown' reason" in {
+    val e = new IllegalStateException("Connection was shutdown.")
+    val ioexception = RequestRunner.decorateException(e)
+    ioexception shouldBe a[IOException]
+    ioexception.getMessage shouldBe "java.lang.IllegalStateException: Connection was shutdown."
+  }
+
+
 
   class MyHeaderHandler() extends SdkAsyncHttpResponseHandler {
     private val headers = new AtomicReference[SdkHttpResponse](null)

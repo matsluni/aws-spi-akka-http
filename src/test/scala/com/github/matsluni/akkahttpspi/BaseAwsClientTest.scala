@@ -17,8 +17,8 @@
 package com.github.matsluni.akkahttpspi
 
 import java.net.URI
-
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
+import com.github.dockerjava.api.model.Frame
 import com.github.matsluni.akkahttpspi.testcontainers.LocalStackReadyLogWaitStrategy
 import org.scalatest.concurrent.{Eventually, Futures, IntegrationPatience}
 import org.scalatest.BeforeAndAfter
@@ -28,6 +28,7 @@ import software.amazon.awssdk.regions.Region
 import scala.util.Random
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.testcontainers.shaded.com.github.dockerjava.core.InvocationBuilder.AsyncResultCallback
 
 trait BaseAwsClientTest[C <: SdkClient]
   extends AnyWordSpec
@@ -53,12 +54,20 @@ trait LocalstackBaseAwsClientTest[C <: SdkClient] extends BaseAwsClientTest[C] {
   lazy val exposedServicePort: Int = 4566
 
   private lazy val containerInstance = new GenericContainer(
-    dockerImage = "localstack/localstack",
+    dockerImage = "localstack/localstack:1.4.0",
     exposedPorts = Seq(exposedServicePort),
     env = Map("SERVICES" -> service),
     waitStrategy = Some(LocalStackReadyLogWaitStrategy)
   )
   override val container: GenericContainer = containerInstance
+
+  protected def killLocalstackProcess(): Unit = {
+    // restarting the docker container is not a solution because the port will change
+    // https://github.com/testcontainers/testcontainers-java/issues/606
+    container.dockerClient.execStartCmd(
+      container.dockerClient.execCreateCmd(container.containerId).withCmd("pkill", "python").exec().getId
+    ).exec(new AsyncResultCallback[Frame]()).awaitCompletion().awaitResult()
+  }
 }
 
 trait ElasticMQSQSBaseAwsClientTest[C <: SdkClient] extends BaseAwsClientTest[C] {
