@@ -48,13 +48,20 @@ class RequestRunnerSpec extends AnyWordSpec with Matchers with OptionValues {
     handler.responseHeaders.headers().asScala.get("Content-Length").value.asScala.headOption.value shouldBe "2"
   }
 
-  "decorate exception" in {
+  "decorate UnexpectedConnectionClosureException" in {
     //instantiate akka.http.impl.engine.client.OutgoingConnectionBlueprint.UnexpectedConnectionClosureException using reflection
     val clazz = Class.forName("akka.http.impl.engine.client.OutgoingConnectionBlueprint$UnexpectedConnectionClosureException")
     val e = clazz.getDeclaredConstructor(classOf[Int]).newInstance(Integer.valueOf(1)).asInstanceOf[Throwable]
     val ioexception = RequestRunner.decorateException(e)
     ioexception shouldBe a[IOException]
     ioexception.getMessage shouldBe "akka.http.impl.engine.client.OutgoingConnectionBlueprint$UnexpectedConnectionClosureException: The http server closed the connection unexpectedly before delivering responses for 1 outstanding requests"
+  }
+
+  "decorate StreamTcpException" in {
+    val e = new akka.stream.StreamTcpException("The connection closed with error: Connection reset")
+    val ioexception = RequestRunner.decorateException(e)
+    ioexception shouldBe a[IOException]
+    ioexception.getMessage shouldBe "akka.stream.StreamTcpException: The connection closed with error: Connection reset"
   }
 
 

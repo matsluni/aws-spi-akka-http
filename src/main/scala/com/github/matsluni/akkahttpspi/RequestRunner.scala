@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ContentTypes, HttpResponse}
 import akka.http.scaladsl.model.headers.{`Content-Length`, `Content-Type`}
-import akka.stream.Materializer
+import akka.stream.{Materializer, StreamTcpException}
 import akka.stream.scaladsl.{Keep, Sink}
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.http.SdkHttpFullResponse
@@ -80,9 +80,11 @@ class RequestRunner()(implicit sys: ActorSystem, ec: ExecutionContext, mat: Mate
 }
 
 object RequestRunner {
-  //Decorate akka-http exceptions to exceptions understood by the AWS SDK so that they are automatically retried by the default retry policy
+  //Decorate akka-http exceptions with IOException so that AWS SDK retries them automatically (if using the default retry policy)
   //This was inspired in NettyUtils.decorateException (https://github.com/aws/aws-sdk-java-v2/blob/13985e0668a9a0b12ad331644e3c4fd1385c2cd7/http-clients/netty-nio-client/src/main/java/software/amazon/awssdk/http/nio/netty/internal/utils/NettyUtils.java#L67-L80)
   private[akkahttpspi] def decorateException(e: Throwable): Throwable = e match {
+    //StreamTcpException is the exception thrown by the underlying TCP infrastrucuture (see akka.stream.impl.io.TcpConnectionStage)
+    case e: StreamTcpException => new IOException(e)
     //workaround for akka.http.impl.engine.client.OutgoingConnectionBlueprint.UnexpectedConnectionClosureException being private
     //see more details in https://github.com/akka/akka-http/issues/3481
     case e if e.getMessage.startsWith("The http server closed the connection unexpectedly") => new IOException(e)
