@@ -63,6 +63,13 @@ class RequestRunnerSpec extends AnyWordSpec with Matchers with OptionValues {
     ioexception shouldBe a[IOException]
     ioexception.getMessage shouldBe "akka.stream.StreamTcpException: The connection closed with error: Connection reset"
   }
+  "decorate IllegalStateException with 'Connection was shutdown' reason" in {
+    val e = new IllegalStateException("Connection was shutdown.")
+    val ioexception = RequestRunner.decorateException(e)
+    ioexception shouldBe a[IOException]
+    ioexception.getMessage shouldBe "java.lang.IllegalStateException: Connection was shutdown."
+  }
+
 
 
   class MyHeaderHandler() extends SdkAsyncHttpResponseHandler {
