@@ -16,12 +16,14 @@
 
 package com.github.matsluni.akkahttpspi.sqs
 
+import akka.http.scaladsl.model.HttpProtocols
+import com.github.matsluni.akkahttpspi.AkkaHttpClient.AkkaHttpClientBuilder
 import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, ElasticMQSQSBaseAwsClientTest}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
-import software.amazon.awssdk.http.{Protocol, SdkHttpConfigurationOption}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
-import software.amazon.awssdk.utils.AttributeMap
+
+import java.util.concurrent.CompletionException
 
 // switched to use ElasticMQ container instead of Localstack due to https://github.com/localstack/localstack/issues/8545
 class TestSQS extends ElasticMQSQSBaseAwsClientTest[SqsAsyncClient] {
@@ -46,18 +48,19 @@ class TestSQS extends ElasticMQSQSBaseAwsClientTest[SqsAsyncClient] {
       receivedMessage.messages() shouldBe java.util.Collections.EMPTY_LIST
     }
 
-    val http2AttributeMap = AttributeMap.builder().put(SdkHttpConfigurationOption.PROTOCOL, Protocol.HTTP2).build()
     //softwaremill/elasticmq-native does not support HTTP/2
-    "work with HTTP/2" ignore withClient(http2AttributeMap) { implicit client =>
-      val result = client.listQueues().join()
-      result.queueUrls() should not be null
+    "work with HTTP/2" in withClient(_.withProtocol(HttpProtocols.`HTTP/2.0`)) { implicit client =>
+      the [CompletionException] thrownBy {
+        val result = client.listQueues().join()
+        result.queueUrls() should not be null
+      } should have message "software.amazon.awssdk.services.sqs.model.SqsException: null (Service: Sqs, Status Code: 505, Request ID: null)"
     }
 
   }
 
-  private def withClient(attributeMap: AttributeMap = AttributeMap.empty())(testCode: SqsAsyncClient => Any): Any = {
+  private def withClient(builderFn: AkkaHttpClientBuilder => AkkaHttpClientBuilder = identity)(testCode: SqsAsyncClient => Any): Any = {
 
-    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().buildWithDefaults(attributeMap)
+    val akkaClient = builderFn(new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory()).build()
 
     val client = SqsAsyncClient
       .builder()

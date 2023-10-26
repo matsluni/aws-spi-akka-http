@@ -16,12 +16,12 @@
 
 package com.github.matsluni.akkahttpspi.sns
 
+import akka.http.scaladsl.model.HttpProtocols
+import com.github.matsluni.akkahttpspi.AkkaHttpClient.AkkaHttpClientBuilder
 import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, LocalstackBaseAwsClientTest}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
-import software.amazon.awssdk.http.{Protocol, SdkHttpConfigurationOption}
 import software.amazon.awssdk.services.sns.SnsAsyncClient
 import software.amazon.awssdk.services.sns.model.{CreateTopicRequest, PublishRequest}
-import software.amazon.awssdk.utils.AttributeMap
 
 class TestSNS extends LocalstackBaseAwsClientTest[SnsAsyncClient] {
 
@@ -33,16 +33,15 @@ class TestSNS extends LocalstackBaseAwsClientTest[SnsAsyncClient] {
       result.messageId() should not be null
     }
 
-    val http2AttributeMap = AttributeMap.builder().put(SdkHttpConfigurationOption.PROTOCOL, Protocol.HTTP2).build()
-    "work with HTTP/2" in withClient(http2AttributeMap) { implicit client =>
+    "work with HTTP/2" in withClient(_.withProtocol(HttpProtocols.`HTTP/2.0`)) { implicit client =>
       val result = client.listTopics().join()
       result.topics() should not be null
     }
   }
 
-  private def withClient(attributeMap: AttributeMap = AttributeMap.empty())(testCode: SnsAsyncClient => Any): Any = {
+  private def withClient(builderFn: AkkaHttpClientBuilder => AkkaHttpClientBuilder = identity)(testCode: SnsAsyncClient => Any): Any = {
 
-    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().buildWithDefaults(attributeMap)
+    val akkaClient = builderFn(new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory()).build()
 
     val client = SnsAsyncClient
       .builder()

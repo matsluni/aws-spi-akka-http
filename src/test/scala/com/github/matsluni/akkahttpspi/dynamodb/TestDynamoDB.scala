@@ -16,12 +16,12 @@
 
 package com.github.matsluni.akkahttpspi.dynamodb
 
+import akka.http.scaladsl.model.HttpProtocols
+import com.github.matsluni.akkahttpspi.AkkaHttpClient.AkkaHttpClientBuilder
 import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, LocalstackBaseAwsClientTest}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
-import software.amazon.awssdk.http.{Protocol, SdkHttpConfigurationOption}
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.awssdk.services.dynamodb.model._
-import software.amazon.awssdk.utils.AttributeMap
 
 import scala.jdk.CollectionConverters._
 
@@ -49,16 +49,15 @@ class TestDynamoDB extends LocalstackBaseAwsClientTest[DynamoDbAsyncClient] {
       tableResult.tableNames().asScala should have size (1)
     }
 
-    val http2AttributeMap = AttributeMap.builder().put(SdkHttpConfigurationOption.PROTOCOL, Protocol.HTTP2).build()
-    "work with HTTP/2" in withClient(http2AttributeMap) { implicit client =>
+    "work with HTTP/2" in withClient(_.withProtocol(HttpProtocols.`HTTP/2.0`)) { implicit client =>
       val result = client.listTables().join()
       result.tableNames() should not be null
     }
   }
 
-  private def withClient(attributeMap: AttributeMap = AttributeMap.empty())(testCode: DynamoDbAsyncClient => Any): Any = {
+  private def withClient(builderFn: AkkaHttpClientBuilder => AkkaHttpClientBuilder = identity)(testCode: DynamoDbAsyncClient => Any): Any = {
 
-    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().buildWithDefaults(attributeMap)
+    val akkaClient = builderFn(new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory()).build()
 
     val client = DynamoDbAsyncClient
       .builder()

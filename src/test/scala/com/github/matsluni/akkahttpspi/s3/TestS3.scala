@@ -17,16 +17,17 @@
 package com.github.matsluni.akkahttpspi.s3
 
 import java.io.{File, FileWriter}
+import java.util.concurrent.CompletionException
+
+import akka.http.scaladsl.model.HttpProtocols
 import com.dimafeng.testcontainers.GenericContainer
+import com.github.matsluni.akkahttpspi.AkkaHttpClient.AkkaHttpClientBuilder
 import com.github.matsluni.akkahttpspi.testcontainers.TimeoutWaitStrategy
 import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, BaseAwsClientTest}
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.core.async.{AsyncRequestBody, AsyncResponseTransformer}
-import software.amazon.awssdk.http.Protocol
-import software.amazon.awssdk.http.SdkHttpConfigurationOption
 import software.amazon.awssdk.services.s3.{S3AsyncClient, S3Configuration}
 import software.amazon.awssdk.services.s3.model._
-import software.amazon.awssdk.utils.AttributeMap
 
 import scala.jdk.CollectionConverters._
 import scala.concurrent.duration._
@@ -87,11 +88,12 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
       result.asUtf8String() should be(fileContent + fileContent)
     }
 
-    val http2AttributeMap = AttributeMap.builder().put(SdkHttpConfigurationOption.PROTOCOL, Protocol.HTTP2).build()
     //adobe/s3mock does not support HTTP/2
-    "work with HTTP/2" ignore withClient(http2AttributeMap) { implicit client =>
-      val result = client.listBuckets().join()
-      result.buckets() should not be null
+    "work with HTTP/2" in withClient(_.withProtocol(HttpProtocols.`HTTP/2.0`)) { implicit client =>
+      the[CompletionException] thrownBy {
+        val result = client.listBuckets().join()
+        result.buckets() should not be null
+      } should have message "software.amazon.awssdk.services.s3.model.S3Exception: null (Service: S3, Status Code: 426, Request ID: null)"
     }
 
   }
@@ -102,9 +104,9 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
     bucketName
   }
 
-  private def withClient(attributeMap: AttributeMap = AttributeMap.empty())(testCode: S3AsyncClient => Any): Any = {
+  private def withClient(builderFn: AkkaHttpClientBuilder => AkkaHttpClientBuilder = identity)(testCode: S3AsyncClient => Any): Any = {
 
-    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().buildWithDefaults(attributeMap)
+    val akkaClient = builderFn(new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory()).build()
 
     val client = S3AsyncClient
       .builder()
