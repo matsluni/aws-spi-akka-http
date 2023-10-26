@@ -41,13 +41,13 @@ import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext}
 
-class AkkaHttpClient(shutdownHandle: () => Unit, connectionSettings: ConnectionPoolSettings)(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) extends SdkAsyncHttpClient {
+class AkkaHttpClient(shutdownHandle: () => Unit, connectionSettings: ConnectionPoolSettings, protocol: HttpProtocol)(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) extends SdkAsyncHttpClient {
   import AkkaHttpClient._
 
   lazy val runner = new RequestRunner()
 
   override def execute(request: AsyncExecuteRequest): CompletableFuture[Void] = {
-    val akkaHttpRequest = toAkkaRequest(request.request(), request.requestContentPublisher())
+    val akkaHttpRequest = toAkkaRequest(protocol, request.request(), request.requestContentPublisher())
     runner.run(
       () => Http().singleRequest(akkaHttpRequest, settings = connectionSettings),
       request.responseHandler()
@@ -65,7 +65,7 @@ object AkkaHttpClient {
 
   val logger = LoggerFactory.getLogger(this.getClass)
 
-  private[akkahttpspi] def toAkkaRequest(request: SdkHttpRequest, contentPublisher: SdkHttpContentPublisher): HttpRequest = {
+  private[akkahttpspi] def toAkkaRequest(protocol: HttpProtocol, request: SdkHttpRequest, contentPublisher: SdkHttpContentPublisher): HttpRequest = {
     val (contentTypeHeader, reqheaders) = convertHeaders(request.headers())
     val method = convertMethod(request.method().name())
     HttpRequest(
@@ -73,7 +73,7 @@ object AkkaHttpClient {
       uri      = Uri(request.getUri.toString),
       headers  = reqheaders,
       entity   = entityForMethodAndContentType(method, contentTypeHeaderToContentType(contentTypeHeader), contentPublisher),
-      protocol = HttpProtocols.`HTTP/1.1`
+      protocol = protocol
     )
   }
 
@@ -139,7 +139,9 @@ object AkkaHttpClient {
 
   case class AkkaHttpClientBuilder(private val actorSystem: Option[ActorSystem] = None,
                                    private val executionContext: Option[ExecutionContext] = None,
-                                   private val connectionPoolSettings: Option[ConnectionPoolSettings] = None) extends SdkAsyncHttpClient.Builder[AkkaHttpClientBuilder] {
+                                   private val connectionPoolSettings: Option[ConnectionPoolSettings] = None,
+                                   private val protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`
+                                  ) extends SdkAsyncHttpClient.Builder[AkkaHttpClientBuilder] {
     def buildWithDefaults(attributeMap: AttributeMap): SdkAsyncHttpClient = {
       implicit val as = actorSystem.getOrElse(ActorSystem("aws-akka-http"))
       implicit val ec = executionContext.getOrElse(as.dispatcher)
@@ -152,12 +154,13 @@ object AkkaHttpClient {
         }
         ()
       }
-      new AkkaHttpClient(shutdownhandleF, cps)(as, ec, mat)
+      new AkkaHttpClient(shutdownhandleF, cps, protocol)(as, ec, mat)
     }
     def withActorSystem(actorSystem: ActorSystem): AkkaHttpClientBuilder = copy(actorSystem = Some(actorSystem))
     def withActorSystem(actorSystem: ClassicActorSystemProvider): AkkaHttpClientBuilder = copy(actorSystem = Some(actorSystem.classicSystem))
     def withExecutionContext(executionContext: ExecutionContext): AkkaHttpClientBuilder = copy(executionContext = Some(executionContext))
     def withConnectionPoolSettings(connectionPoolSettings: ConnectionPoolSettings): AkkaHttpClientBuilder = copy(connectionPoolSettings = Some(connectionPoolSettings))
+    def withProtocol(protocol: HttpProtocol): AkkaHttpClientBuilder = copy(protocol = protocol)
   }
 
   lazy val xAmzJson = ContentType(MediaType.customBinary("application", "x-amz-json-1.0", Compressible))

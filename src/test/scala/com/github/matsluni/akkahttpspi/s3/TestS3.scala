@@ -17,8 +17,11 @@
 package com.github.matsluni.akkahttpspi.s3
 
 import java.io.{File, FileWriter}
+import java.util.concurrent.CompletionException
 
+import akka.http.scaladsl.model.HttpProtocols
 import com.dimafeng.testcontainers.GenericContainer
+import com.github.matsluni.akkahttpspi.AkkaHttpClient.AkkaHttpClientBuilder
 import com.github.matsluni.akkahttpspi.testcontainers.TimeoutWaitStrategy
 import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, BaseAwsClientTest}
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
@@ -34,14 +37,14 @@ import scala.util.Random
 class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
 
   "Async S3 client" should {
-    "create bucket" in withClient { implicit client =>
+    "create bucket" in withClient() { implicit client =>
       val bucketName = createBucket()
       val buckets = client.listBuckets().join
       buckets.buckets() should have size (1)
       buckets.buckets().asScala.toList.head.name() should be(bucketName)
     }
 
-    "upload and download a file to a bucket" in withClient { implicit client =>
+    "upload and download a file to a bucket" in withClient() { implicit client =>
       val bucketName = createBucket()
       val fileContent = 0 to 1000 mkString
 
@@ -55,7 +58,7 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
       result.response().contentLength() shouldEqual fileContent.getBytes().length
     }
 
-    "multipart upload" in withClient { implicit client =>
+    "multipart upload" in withClient() { implicit client =>
       val bucketName = createBucket()
       val randomFile = File.createTempFile("aws1", Random.alphanumeric.take(5).mkString)
       val fileContent = (0 to 1000000).mkString
@@ -85,6 +88,14 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
       result.asUtf8String() should be(fileContent + fileContent)
     }
 
+    //adobe/s3mock does not support HTTP/2
+    "work with HTTP/2" in withClient(_.withProtocol(HttpProtocols.`HTTP/2.0`)) { implicit client =>
+      the[CompletionException] thrownBy {
+        val result = client.listBuckets().join()
+        result.buckets() should not be null
+      } should have message "software.amazon.awssdk.services.s3.model.S3Exception: null (Service: S3, Status Code: 426, Request ID: null)"
+    }
+
   }
 
   def createBucket()(implicit client: S3AsyncClient): String = {
@@ -93,9 +104,9 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
     bucketName
   }
 
-  private def withClient(testCode: S3AsyncClient => Any): Any = {
+  private def withClient(builderFn: AkkaHttpClientBuilder => AkkaHttpClientBuilder = identity)(testCode: S3AsyncClient => Any): Any = {
 
-    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
+    val akkaClient = builderFn(new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory()).build()
 
     val client = S3AsyncClient
       .builder()
@@ -126,7 +137,7 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
   private lazy val containerInstance = new GenericContainer(
     dockerImage = "adobe/s3mock:2.13.0",
     exposedPorts = Seq(exposedServicePort),
-    waitStrategy = Some(TimeoutWaitStrategy(10 seconds))
+    waitStrategy = Some(TimeoutWaitStrategy(15 seconds))
   )
   override val container: GenericContainer = containerInstance
 }
