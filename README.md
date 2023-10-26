@@ -72,21 +72,6 @@ val client = S3AsyncClient
 val eventualResponse = client.listBuckets()
 ```
 
-You can also set `software.amazon.awssdk.http.SdkHttpConfigurationOption` options:
-
-```scala
-val attributeMap = AttributeMap.builder()
-  .put(SdkHttpConfigurationOption.PROTOCOL, Protocol.HTTP2)
-  .build()
-val akkaHttpClient = 
-  AkkaHttpClient
-    .builder()
-    .buildWithDefaults(attributeMap)
-```
-
-The following options are supported:
-* `SdkHttpConfigurationOption.PROTOCOL`
-
 When you use this library and a specific AWS service (e.g. S3, SQS, etc...) you may want to exclude the transitive
 Netty dependency `netty-nio-client` like this:
 
@@ -100,7 +85,7 @@ If you not exclude the transitive dependency like shown above you have to explic
 in the service client instantiation. If no client is explicitly set and multiple implementations for the `SdkAsyncHttpClient`
 are found on the classpath, an exception like the following is thrown at runtime:
 
-```
+```java
 software.amazon.awssdk.core.exception.SdkClientException: Multiple HTTP implementations were found on the classpath. 
     To avoid non-deterministic loading implementations, please explicitly provide an HTTP client via the client builders, 
     set the software.amazon.awssdk.http.async.service.impl system property with the FQCN of the HTTP service to use as the 
