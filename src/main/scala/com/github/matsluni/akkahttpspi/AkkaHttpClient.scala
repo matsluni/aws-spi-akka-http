@@ -17,7 +17,6 @@
 package com.github.matsluni.akkahttpspi
 
 import java.util.concurrent.{CompletableFuture, TimeUnit}
-
 import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpHeader.ParsingResult
@@ -27,8 +26,8 @@ import akka.http.scaladsl.model.RequestEntityAcceptance.Expected
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Content-Length`, `Content-Type`}
 import akka.http.scaladsl.settings.ConnectionPoolSettings
-import akka.stream.scaladsl.Source
-import akka.stream.{ActorMaterializer, Materializer, SystemMaterializer}
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.{Materializer, OverflowStrategy, SystemMaterializer}
 import akka.util.ByteString
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.http.async._
@@ -39,19 +38,49 @@ import scala.collection.immutable
 import scala.jdk.CollectionConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 
 class AkkaHttpClient(shutdownHandle: () => Unit, connectionSettings: ConnectionPoolSettings, protocol: HttpProtocol)(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) extends SdkAsyncHttpClient {
   import AkkaHttpClient._
 
   lazy val runner = new RequestRunner()
 
+  def singleRequest(connection: Flow[HttpRequest, HttpResponse, Any], bufferSize: Int = 100): HttpRequest => Future[HttpResponse] = {
+    val queue =
+      Source.queue(bufferSize, OverflowStrategy.dropNew)
+        .via(connection)
+        .to(Sink.foreach { response =>
+          // complete the response promise with the response when it arrives
+          val responseAssociation = response.attribute(ResponsePromise.Key).get
+          responseAssociation.promise.trySuccess(response)
+        })
+        .run()
+
+    req => {
+      // create a promise of the response for each request and set it as an attribute on the request
+      val p = Promise[HttpResponse]()
+      queue.offer(req.addAttribute(ResponsePromise.Key, ResponsePromise(p)))
+        // return the future response
+        .flatMap(_ => p.future)
+    }
+  }
+
+
   override def execute(request: AsyncExecuteRequest): CompletableFuture[Void] = {
     val akkaHttpRequest = toAkkaRequest(protocol, request.request(), request.requestContentPublisher())
-    runner.run(
-      () => Http().singleRequest(akkaHttpRequest, settings = connectionSettings),
-      request.responseHandler()
-    )
+
+    if (protocol == HttpProtocols.`HTTP/2.0`) {
+      val dispatch = singleRequest(Http().connectionTo(request.request().host()).http2())
+      runner.run(
+        () => dispatch(akkaHttpRequest),
+        request.responseHandler()
+      )
+    } else {
+      runner.run(
+        () => Http().singleRequest(akkaHttpRequest, settings = connectionSettings),
+        request.responseHandler()
+      )
+    }
   }
 
   override def close(): Unit = {

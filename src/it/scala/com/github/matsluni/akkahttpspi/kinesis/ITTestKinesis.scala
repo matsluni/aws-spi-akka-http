@@ -16,6 +16,8 @@
 
 package com.github.matsluni.akkahttpspi.kinesis
 
+import akka.http.scaladsl.model.HttpProtocols
+import com.github.matsluni.akkahttpspi.AkkaHttpClient.AkkaHttpClientBuilder
 import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, TestBase}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
@@ -27,9 +29,9 @@ import scala.util.Random
 
 class ITTestKinesis extends AnyWordSpec with Matchers with TestBase {
 
-  def withClient(testCode: KinesisAsyncClient => Any): Any = {
+  def withClient(builderFn: AkkaHttpClientBuilder => AkkaHttpClientBuilder = identity)(testCode: KinesisAsyncClient => Any): Any = {
 
-    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
+    val akkaClient = builderFn(new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory()).build()
 
     val client = KinesisAsyncClient
       .builder()
@@ -49,7 +51,7 @@ class ITTestKinesis extends AnyWordSpec with Matchers with TestBase {
 
   "Kinesis async client" should {
 
-    "use a data stream: create + put + get + delete" in withClient { implicit client =>
+    "use a data stream: create + put + get + delete" in withClient(_.withProtocol(HttpProtocols.`HTTP/2.0`)) { implicit client =>
 
       val streamName = "aws-spi-test-" + Random.alphanumeric.take(10).filterNot(_.isUpper).mkString
       val data = "123"

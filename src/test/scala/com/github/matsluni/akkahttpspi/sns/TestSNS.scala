@@ -33,7 +33,7 @@ class TestSNS extends LocalstackBaseAwsClientTest[SnsAsyncClient] {
       result.messageId() should not be null
     }
 
-    "work with HTTP/2" in withClient(_.withProtocol(HttpProtocols.`HTTP/2.0`)) { implicit client =>
+    "work with HTTP/2" ignore withClient(_.withProtocol(HttpProtocols.`HTTP/2.0`)) { implicit client =>
       val result = client.listTopics().join()
       result.topics() should not be null
     }

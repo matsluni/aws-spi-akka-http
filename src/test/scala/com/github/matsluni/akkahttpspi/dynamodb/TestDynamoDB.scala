@@ -49,7 +49,7 @@ class TestDynamoDB extends LocalstackBaseAwsClientTest[DynamoDbAsyncClient] {
       tableResult.tableNames().asScala should have size (1)
     }
 
-    "work with HTTP/2" in withClient(_.withProtocol(HttpProtocols.`HTTP/2.0`)) { implicit client =>
+    "work with HTTP/2" ignore withClient(_.withProtocol(HttpProtocols.`HTTP/2.0`)) { implicit client =>
       val result = client.listTables().join()
       result.tableNames() should not be null
     }

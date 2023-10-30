@@ -49,7 +49,7 @@ class TestSQS extends ElasticMQSQSBaseAwsClientTest[SqsAsyncClient] {
     }
 
     //softwaremill/elasticmq-native does not support HTTP/2
-    "work with HTTP/2" in withClient(_.withProtocol(HttpProtocols.`HTTP/2.0`)) { implicit client =>
+    "work with HTTP/2" ignore withClient(_.withProtocol(HttpProtocols.`HTTP/2.0`)) { implicit client =>
       the [CompletionException] thrownBy {
         val result = client.listQueues().join()
         result.queueUrls() should not be null

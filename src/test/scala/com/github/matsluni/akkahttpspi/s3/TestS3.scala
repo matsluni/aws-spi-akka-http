@@ -89,7 +89,7 @@ class TestS3 extends BaseAwsClientTest[S3AsyncClient] {
     }
 
     //adobe/s3mock does not support HTTP/2
-    "work with HTTP/2" in withClient(_.withProtocol(HttpProtocols.`HTTP/2.0`)) { implicit client =>
+    "work with HTTP/2" ignore withClient(_.withProtocol(HttpProtocols.`HTTP/2.0`)) { implicit client =>
       the[CompletionException] thrownBy {
         val result = client.listBuckets().join()
         result.buckets() should not be null

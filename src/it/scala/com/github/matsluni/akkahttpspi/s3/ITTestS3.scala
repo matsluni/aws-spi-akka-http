@@ -16,8 +16,10 @@
 
 package com.github.matsluni.akkahttpspi.s3
 
-import java.io.{File, FileWriter}
+import akka.http.scaladsl.model.HttpProtocols
+import com.github.matsluni.akkahttpspi.AkkaHttpClient.AkkaHttpClientBuilder
 
+import java.io.{File, FileWriter}
 import com.github.matsluni.akkahttpspi.{AkkaHttpAsyncHttpService, TestBase}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
@@ -29,9 +31,9 @@ import scala.util.Random
 
 class ITTestS3 extends AnyWordSpec with Matchers with TestBase {
 
-  def withClient(checksumEnabled: Boolean = false)(testCode: S3AsyncClient => Any): Any = {
+  def withClient(checksumEnabled: Boolean = false, builderFn: AkkaHttpClientBuilder => AkkaHttpClientBuilder = identity)(testCode: S3AsyncClient => Any): Any = {
 
-    val akkaClient = new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory().build()
+    val akkaClient = builderFn(new AkkaHttpAsyncHttpService().createAsyncHttpClientFactory()).build()
 
     val client = S3AsyncClient
       .builder()
@@ -51,7 +53,7 @@ class ITTestS3 extends AnyWordSpec with Matchers with TestBase {
   }
 
   "S3 async client" should {
-    "upload and download a file to a bucket + cleanup" in withClient(checksumEnabled = true) { implicit client =>
+    "upload and download a file to a bucket + cleanup" in withClient(checksumEnabled = true, _.withProtocol(HttpProtocols.`HTTP/2.0`)) { implicit client =>
       val bucketName = "aws-spi-test-" + Random.alphanumeric.take(10).filterNot(_.isUpper).mkString
       createBucket(bucketName)
       val randomFile = File.createTempFile("aws", Random.alphanumeric.take(5).mkString)
@@ -70,7 +72,7 @@ class ITTestS3 extends AnyWordSpec with Matchers with TestBase {
       client.deleteBucket(DeleteBucketRequest.builder().bucket(bucketName).build()).join()
     }
 
-    "multipart upload" in withClient() { implicit client =>
+    "multipart upload" in withClient(false, _.withProtocol(HttpProtocols.`HTTP/2.0`)) { implicit client =>
       val bucketName = "aws-spi-test-" + Random.alphanumeric.take(5).map(_.toLower).mkString
       createBucket(bucketName)
       val fileContent = (0 to 1000000).mkString
