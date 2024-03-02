@@ -1,6 +1,6 @@
 ThisBuild / organization := "com.github.matsluni"
 // https://www.scala-lang.org/download/all.html
-ThisBuild / crossScalaVersions := List("2.12.18", "2.13.12", "3.3.1")
+ThisBuild / crossScalaVersions := List("2.12.18", "2.13.12", "3.3.3")
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 
 ThisBuild / githubWorkflowPublishTargetBranches := Nil
