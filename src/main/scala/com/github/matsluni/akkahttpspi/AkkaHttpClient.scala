@@ -28,11 +28,11 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Content-Length`, `Content-Type`}
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.scaladsl.Source
-import akka.stream.{ActorMaterializer, Materializer, SystemMaterializer}
+import akka.stream.{Materializer, SystemMaterializer}
 import akka.util.ByteString
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.http.async._
-import software.amazon.awssdk.http.SdkHttpRequest
+import software.amazon.awssdk.http.{SdkHttpConfigurationOption, SdkHttpRequest}
 import software.amazon.awssdk.utils.AttributeMap
 
 import scala.collection.immutable
@@ -41,7 +41,7 @@ import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext}
 
-class AkkaHttpClient(shutdownHandle: () => Unit, connectionSettings: ConnectionPoolSettings)(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) extends SdkAsyncHttpClient {
+class AkkaHttpClient(shutdownHandle: () => Unit, private[akkahttpspi] val connectionSettings: ConnectionPoolSettings)(implicit actorSystem: ActorSystem, ec: ExecutionContext, mat: Materializer) extends SdkAsyncHttpClient {
   import AkkaHttpClient._
 
   lazy val runner = new RequestRunner()
@@ -135,17 +135,42 @@ object AkkaHttpClient {
     else throw new RuntimeException(s"Could not parse custom content type '$contentTypeStr'.")
   }
 
+  // based on NettyNioAsyncHttpClient and ApacheHttpClient
+  // https://github.com/search?q=repo%3Aaws%2Faws-sdk-java-v2+SdkHttpConfigurationOption+path%3A%2F%5Ehttp-clients%5C%2Fnetty-nio-client%5C%2Fsrc%5C%2Fmain%2F&type=code
+  // https://github.com/search?q=repo%3Aaws%2Faws-sdk-java-v2+SdkHttpConfigurationOption+path%3A%2F%5Ehttp-clients%5C%2Fapache-client%5C%2Fsrc%5C%2Fmain%2F&type=code
+  private[akkahttpspi] def buildConnectionPoolSettings(base: ConnectionPoolSettings,attributeMap: AttributeMap): ConnectionPoolSettings = {
+    def zeroToInfinite(duration: java.time.Duration): scala.concurrent.duration.Duration =
+      if (duration.isZero) scala.concurrent.duration.Duration.Inf
+      else toScala(duration)
+
+    def toScala(duration: java.time.Duration): scala.concurrent.duration.FiniteDuration =
+      scala.concurrent.duration.Duration.fromNanos(duration.toNanos)
+
+    base
+      .withUpdatedConnectionSettings(s =>
+        s.withConnectingTimeout(toScala(attributeMap.get(SdkHttpConfigurationOption.CONNECTION_TIMEOUT)))
+          .withIdleTimeout(toScala(attributeMap.get(SdkHttpConfigurationOption.CONNECTION_MAX_IDLE_TIMEOUT)))
+      )
+      .withMaxConnections(attributeMap.get(SdkHttpConfigurationOption.MAX_CONNECTIONS).intValue())
+      .withMaxConnectionLifetime(zeroToInfinite(attributeMap.get(SdkHttpConfigurationOption.CONNECTION_TIME_TO_LIVE)))
+  }
+
   def builder() = AkkaHttpClientBuilder()
 
   case class AkkaHttpClientBuilder(private val actorSystem: Option[ActorSystem] = None,
                                    private val executionContext: Option[ExecutionContext] = None,
-                                   private val connectionPoolSettings: Option[ConnectionPoolSettings] = None) extends SdkAsyncHttpClient.Builder[AkkaHttpClientBuilder] {
-    def buildWithDefaults(attributeMap: AttributeMap): SdkAsyncHttpClient = {
+                                   private val connectionPoolSettings: Option[ConnectionPoolSettings] = None,
+                                   private val connectionPoolSettingsBuilder: (ConnectionPoolSettings, AttributeMap) => ConnectionPoolSettings = (c, _) => c
+                                  ) extends SdkAsyncHttpClient.Builder[AkkaHttpClientBuilder] {
+
+    def buildWithDefaults(serviceDefaults: AttributeMap): SdkAsyncHttpClient = {
       implicit val as = actorSystem.getOrElse(ActorSystem("aws-akka-http"))
       implicit val ec = executionContext.getOrElse(as.dispatcher)
       val mat: Materializer = SystemMaterializer(as).materializer
 
-      val cps = connectionPoolSettings.getOrElse(ConnectionPoolSettings(as))
+      val resolvedOptions = serviceDefaults.merge(SdkHttpConfigurationOption.GLOBAL_HTTP_DEFAULTS);
+
+      val cps = connectionPoolSettingsBuilder(connectionPoolSettings.getOrElse(ConnectionPoolSettings(as)), resolvedOptions)
       val shutdownhandleF = () => {
         if (actorSystem.isEmpty) {
           Await.result(Http().shutdownAllConnectionPools().flatMap(_ => as.terminate()), Duration.apply(10, TimeUnit.SECONDS))
@@ -158,6 +183,9 @@ object AkkaHttpClient {
     def withActorSystem(actorSystem: ClassicActorSystemProvider): AkkaHttpClientBuilder = copy(actorSystem = Some(actorSystem.classicSystem))
     def withExecutionContext(executionContext: ExecutionContext): AkkaHttpClientBuilder = copy(executionContext = Some(executionContext))
     def withConnectionPoolSettings(connectionPoolSettings: ConnectionPoolSettings): AkkaHttpClientBuilder = copy(connectionPoolSettings = Some(connectionPoolSettings))
+    def withConnectionPoolSettingsBuilder(connectionPoolSettingsBuilder: (ConnectionPoolSettings, AttributeMap) => ConnectionPoolSettings): AkkaHttpClientBuilder =
+      copy(connectionPoolSettingsBuilder = connectionPoolSettingsBuilder)
+    def withConnectionPoolSettingsBuilderFromAttributeMap(): AkkaHttpClientBuilder = copy(connectionPoolSettingsBuilder = buildConnectionPoolSettings)
   }
 
   lazy val xAmzJson = ContentType(MediaType.customBinary("application", "x-amz-json-1.0", Compressible))

@@ -53,7 +53,7 @@ trait LocalstackBaseAwsClientTest[C <: SdkClient] extends BaseAwsClientTest[C] {
   lazy val exposedServicePort: Int = 4566
 
   private lazy val containerInstance = new GenericContainer(
-    dockerImage = "localstack/localstack",
+    dockerImage = "localstack/localstack:1.4.0",
     exposedPorts = Seq(exposedServicePort),
     env = Map("SERVICES" -> service),
     waitStrategy = Some(LocalStackReadyLogWaitStrategy)
